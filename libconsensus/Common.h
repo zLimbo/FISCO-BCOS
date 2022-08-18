@@ -65,7 +65,7 @@ public:
 
     std::shared_ptr<dev::eth::Block> block;
     /// hash set for filter fetched transactions
-    h256Hash m_transactionSet;
+    h256Hash m_transactionSet; 
     dev::blockverifier::ExecutiveContext::Ptr p_execContext;
     dev::eth::BlockFactory::Ptr m_blockFactory;
 };

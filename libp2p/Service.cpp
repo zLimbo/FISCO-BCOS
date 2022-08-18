@@ -588,12 +588,14 @@ void Service::asyncSendMessageByNodeID(NodeID nodeID, P2PMessage::Ptr message,
             auto session = it->second;
             if (callback)
             {
+                // 有回调注册回调函数
                 session->session()->asyncSendMessage(message, options,
                     [session, callback](
                         dev::network::NetworkException e, dev::network::Message::Ptr message) {
                         P2PMessage::Ptr p2pMessage = std::dynamic_pointer_cast<P2PMessage>(message);
                         if (callback)
                         {
+                            // p2pMessage 是返回的消息
                             callback(e, session, p2pMessage);
                         }
                     });
@@ -630,6 +632,7 @@ void Service::asyncSendMessageByNodeID(NodeID nodeID, P2PMessage::Ptr message,
 
         if (callback)
         {
+            // 出现异常，则往回调函数内传一个错误信息
             m_host->threadPool()->enqueue([callback, e] {
                 callback(NetworkException(dev::network::Disconnect, "Disconnect"),
                     P2PSession::Ptr(), P2PMessage::Ptr());

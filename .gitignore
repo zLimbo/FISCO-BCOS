@@ -34,7 +34,6 @@
 # java
 *.class
 
-
 # ignore some directory
 build**
 deps
@@ -51,3 +50,7 @@ deps/**
 
 # others
 .clang-format
+
+.cache
+cmake-build-debug
+error.log

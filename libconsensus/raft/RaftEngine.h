@@ -215,7 +215,7 @@ protected:
     size_t m_lastLeaderTerm = 0;
 
     raft::NodeIndex m_leader;
-    raft::NodeIndex m_vote;
+    raft::NodeIndex m_vote; // vote for
 
     struct BlockRef
     {

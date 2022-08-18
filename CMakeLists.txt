@@ -34,6 +34,7 @@ if(NOT GIT_FOUND)
 endif()
 
 set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY ON)
+set(CMAKE_CXX_STANDARD 11)
 
 # basic setting
 include(Options)

@@ -31,6 +31,9 @@ namespace dev
 {
 namespace consensus
 {
+
+// Sealer负责打包交易，从txPool中获取交易打包成区块，然后发送给Engine进行共识  
+// 先执行再共识？ 
 class RaftSealer : public Sealer
 {
 public:
