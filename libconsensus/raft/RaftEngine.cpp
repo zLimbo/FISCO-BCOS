@@ -625,6 +625,7 @@ bool RaftEngine::runAsCandidateImp(VoteState& _voteState)
         return false;
     }
 
+    // return nowTime - m_lastElectTime >= std::chrono::milliseconds(m_electTimeout);
     if (checkElectTimeout())
     {
         RAFTENGINE_LOG(DEBUG) << LOG_DESC("[#runAsCandidateImp]VoteState")
@@ -634,10 +635,13 @@ bool RaftEngine::runAsCandidateImp(VoteState& _voteState)
                               << LOG_KV("firstVote", _voteState.firstVote)
                               << LOG_KV("discardedVote", _voteState.discardedVote);
 
+        // total = vote + unVote + lastTermErr + firstVote + discardedVote + outdated
+        // majority: return _votes >= m_nodeNum - m_f
         if (isMajorityVote(_voteState.totalVoteCount()))
         {
             RAFTENGINE_LOG(TRACE) << LOG_DESC(
                 "[#runAsCandidateImp]Candidate campaign leader time out");
+            // 大部分节点已经投票，但不足以让本节点成为leader，只能继续递增term继续参选
             switchToCandidate();
         }
         else
@@ -648,6 +652,8 @@ bool RaftEngine::runAsCandidateImp(VoteState& _voteState)
                 << LOG_KV("currentTerm", m_term) << LOG_KV("toTerm", m_term - 1);
             increaseElectTime();
             /// recover to previous term
+            // 未获得足够票数，恢复原有任期，并退回follower状态，不过这样是否安全？
+            // 可能在分区状态
             m_term--;
             RAFTENGINE_LOG(TRACE) << "[#runAsCandidateImp]Switch to Follower";
             switchToFollower(InvalidIndex);
@@ -655,6 +661,7 @@ bool RaftEngine::runAsCandidateImp(VoteState& _voteState)
         return false;
     }
 
+    // 候选期未超时，从消息队列取出消息进行处理
     std::pair<bool, RaftMsgPacket> ret = m_msgQueue.tryPop(5);
     if (!ret.first)
     {
@@ -741,15 +748,18 @@ void RaftEngine::runAsCandidate()
     setVote(m_idx);
     m_firstVote = m_idx;
 
-    if (wonElection(voteState.vote))
+    // 赢得选举，成为leader
+    if (wonElection(voteState.vote)) // return _votes >= m_nodeNum - m_f;
     {
         RAFTENGINE_LOG(DEBUG) << LOG_DESC("[#runAsCandidate]Won election, switch to leader now");
         switchToLeader();
         return;
     }
 
+    // 进入 candidate 工作循环
     while (isWorking())
     {
+        // 同步区块
         auto isSyncing = m_blockSync->isSyncing();
         if (isSyncing)
         {
@@ -765,6 +775,7 @@ void RaftEngine::runAsCandidate()
     }
 }
 
+
 bool RaftEngine::runAsFollowerImp()
 {
     if (m_state != RaftRole::EN_STATE_FOLLOWER || m_accountType != NodeAccountType::SealerAccount)
@@ -774,6 +785,7 @@ bool RaftEngine::runAsFollowerImp()
 
     RAFTENGINE_LOG(TRACE) << LOG_DESC("[#runAsFollowerImp]") << LOG_KV("currentLeader", m_leader);
 
+    // 选举超时进入 candidate
     if (checkElectTimeout())
     {
         RAFTENGINE_LOG(DEBUG) << LOG_DESC("[#runAsFollowerImp]Elect timeout, switch to Candidate");
@@ -817,6 +829,7 @@ bool RaftEngine::runAsFollowerImp()
             hb.populate(RLP(ref(ret.second.data))[0]);
             if (m_leader == Invalid256)
             {
+                // 收到心跳先设置leader?
                 setLeader(hb.leader);
             }
             if (handleHeartbeat(ret.second.nodeIdx, ret.second.nodeId, hb))
@@ -1259,6 +1272,7 @@ bool RaftEngine::handleHeartbeat(u256 const& _from, h512 const& _node, RaftHeart
         stepDown = true;
     }
 
+    // 接受足够的心跳包后，清除首次投票缓存
     clearFirstVoteCache();
     // see the leader last time
     m_lastLeaderTerm = _hb.term;
@@ -1289,6 +1303,7 @@ void RaftEngine::switchToLeader()
     RAFTENGINE_LOG(DEBUG) << LOG_DESC("[#switchToLeader]") << LOG_KV("currentTerm", m_term);
 }
 
+// 切换为follower
 void RaftEngine::switchToFollower(raft::NodeIndex const& _leader)
 {
     {
@@ -1358,6 +1373,7 @@ bool RaftEngine::sendResponse(
     return false;
 }
 
+// candidate 处理投票请求的回复
 HandleVoteResult RaftEngine::handleVoteResponse(
     u256 const& _from, h512 const& _node, RaftVoteResp const& _resp, VoteState& _vote_state)
 {
@@ -1383,6 +1399,7 @@ HandleVoteResult RaftEngine::handleVoteResponse(
     }
     case VoteRespFlag::VOTE_RESP_LEADER_REJECT:
     {
+        // 遇到更高term的leader，直接变为follower，并设置lastLeaderTerm
         /// switch to leader directly
         m_term = _resp.term;
         m_lastLeaderTerm = _resp.lastLeaderTerm;
@@ -1392,6 +1409,7 @@ HandleVoteResult RaftEngine::handleVoteResponse(
     }
     case VoteRespFlag::VOTE_RESP_LASTTERM_ERROR:
     {
+        // 落后的term
         _vote_state.lastTermErr++;
         if (isMajorityVote(_vote_state.lastTermErr))
         {
@@ -1406,6 +1424,7 @@ HandleVoteResult RaftEngine::handleVoteResponse(
         _vote_state.firstVote++;
         if (isMajorityVote(_vote_state.firstVote))
         {
+            // 接受到大部分节点的首次投票，回退任期？
             RAFTENGINE_LOG(DEBUG)
                 << LOG_DESC("[#handleVoteResponse]Receive majority first vote, recover term")
                 << LOG_KV("currentTerm", m_term) << LOG_KV("toTerm", m_term - 1);
@@ -1428,6 +1447,7 @@ HandleVoteResult RaftEngine::handleVoteResponse(
     }
     case VOTE_RESP_GRANTED:
     {
+        // 大部分节点投票，成为leader
         _vote_state.vote++;
         if (isMajorityVote(_vote_state.vote))
             return TO_LEADER;
