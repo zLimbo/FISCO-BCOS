@@ -1258,6 +1258,8 @@ std::string Rpc::sendRawTransaction(int _groupID, const std::string& _rlp,
         dev::eth::Block::Ptr _blockPtr)>
         _notifyCallback)
 {
+    RPC_LOG(INFO) << LOG_BADGE("[zd] sendRawTransaction") << LOG_DESC("request")
+                  << LOG_KV("groupID", _groupID) << LOG_KV("rlp", _rlp);
     try
     {
 #if 0
