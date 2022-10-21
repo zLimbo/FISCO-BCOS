@@ -205,8 +205,8 @@ protected:
 
     unsigned m_increaseTime;
 
-    // message queue, defined in Common.h
-    RaftMsgQueue m_msgQueue;
+    // message queue, defined in Common.h， concurrent_queue 阻塞队列
+    RaftMsgQueue m_msgQueue; 
     // role of node
     RaftRole m_state = EN_STATE_FOLLOWER;
 

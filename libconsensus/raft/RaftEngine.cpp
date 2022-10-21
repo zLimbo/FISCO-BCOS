@@ -147,6 +147,8 @@ void RaftEngine::start()
     ConsensusEngineBase::start();
     RAFTENGINE_LOG(INFO) << LOG_DESC("[#start]Raft engine started")
                          << LOG_KV("consensusStatus", consensusStatus());
+
+    // TODO: 如果是Leader，就不断放入tx到txPool中
 }
 
 void RaftEngine::stop()
@@ -163,11 +165,11 @@ void RaftEngine::stop()
 // todo 暂不理解
 void RaftEngine::reportBlock(dev::eth::Block const& _block)
 {
-    ConsensusEngineBase::reportBlock(_block);
+    ConsensusEngineBase::reportBlock(_block); // 报告，打印信息
     auto shouldReport = false;
     {
         Guard guard(m_mutex);
-        // 如果区块链高度为0或最高区块高度小于该区块高度
+        // 如果区块链高度为0或最高区块高度小于该区块高度（是否一定是+1的情况）
         shouldReport = (m_blockChain->number() == 0 ||
                         m_highestBlock.number() < _block.blockHeader().number());
         if (shouldReport)
@@ -182,11 +184,11 @@ void RaftEngine::reportBlock(dev::eth::Block const& _block)
     {
         {
             Guard guard(m_commitMutex);
-
+            
             auto iter = m_commitFingerPrint.find(m_uncommittedBlock.header().hash());
-            if (iter != m_commitFingerPrint.end())
+            if (iter != m_commitFingerPrint.end()) 
             {
-                m_commitFingerPrint.erase(iter);
+                m_commitFingerPrint.erase(iter); // 在提交记录中找到该区块，移除该区块
             }
 
             m_uncommittedBlock = Block();
@@ -226,7 +228,7 @@ bool RaftEngine::isValidReq(P2PMessage::Ptr _message, P2PSession::Ptr _session, 
     h512 nodeId;
     bool isSealer = getNodeIdByIndex(nodeId, nodeIdx());
     // peer的nodeID
-    if (!isSealer || _session->nodeID() == nodeId)
+    if (!isSealer || _session->nodeID() == nodeId) // 第二个条件？
     {
         RAFTENGINE_LOG(WARNING) << LOG_DESC("[#isValidReq]I'm not a sealer");
         return false;
@@ -641,7 +643,7 @@ bool RaftEngine::runAsCandidateImp(VoteState& _voteState)
         {
             RAFTENGINE_LOG(TRACE) << LOG_DESC(
                 "[#runAsCandidateImp]Candidate campaign leader time out");
-            // 大部分节点已经投票，但不足以让本节点成为leader，只能继续递增term继续参选
+            // 大部分节点已经投票，但不足以让本节点成为leader，只能递增term继续参选
             switchToCandidate();
         }
         else
@@ -944,7 +946,7 @@ void RaftEngine::broadcastHeartbeat()
     }
 }
 
-// leader
+// candidate
 P2PMessage::Ptr RaftEngine::generateVoteReq()
 {
     RaftVoteReq req;
@@ -957,7 +959,7 @@ P2PMessage::Ptr RaftEngine::generateVoteReq()
     auto currentBlockNumber = m_blockChain->number();
     {
         Guard guard(m_commitMutex);
-        if (bool(m_uncommittedBlock))
+        if (bool(m_uncommittedBlock)) // 如果有未提交区块，可以视为在未提交的日志
         {
             req.lastBlockNumber = currentBlockNumber + 1;
         }
@@ -1086,6 +1088,7 @@ bool RaftEngine::handleVoteRequest(u256 const& _from, h512 const& _node, RaftVot
         {
             if (_req.term == m_term)
             {
+                // 可能有多个candidate都在此任期内竞选，那么其票应该被投出
                 // _req.term == m_term for follower and candidate
                 resp.voteFlag = VOTE_RESP_DISCARD;
                 RAFTENGINE_LOG(DEBUG)
@@ -1120,6 +1123,8 @@ bool RaftEngine::handleVoteRequest(u256 const& _from, h512 const& _node, RaftVot
         return false;
     }
 
+    // 前面是任期的判断，分为term和lastLeaderTerm两种任期判断
+
     auto currentBlockNumber = m_blockChain->number();
     {
         Guard guard(m_commitMutex);
@@ -1149,16 +1154,16 @@ bool RaftEngine::handleVoteRequest(u256 const& _from, h512 const& _node, RaftVot
         RAFTENGINE_LOG(DEBUG) << LOG_DESC(
             "[#handleVoteRequest]Discard vreq for I'm the first time to vote");
 
-        m_firstVote = _req.candidate;
+        m_firstVote = _req.candidate; // 第一次投票标记
         resp.voteFlag = VOTE_RESP_FIRST_VOTE;
-        // 投票，但不改变 term
+        // 投票，但不改变 term（第一次拒绝投票）
         sendResponse(_from, _node, RaftVoteRespPacket, resp);
         return false;
     }
 
     RAFTENGINE_LOG(DEBUG) << LOG_DESC("[#handleVoteRequest]Grant vreq");
 
-    m_term = _req.term;
+    m_term = _req.term; // 更新 m_term 
     m_leader = InvalidIndex;
     m_vote = InvalidIndex;
 
@@ -1166,7 +1171,7 @@ bool RaftEngine::handleVoteRequest(u256 const& _from, h512 const& _node, RaftVot
     m_firstVote = _req.candidate;
     setVote(_req.candidate);
 
-    resp.term = m_term;
+    resp.term = m_term; // resp.term = m_term = _req.term;
     resp.voteFlag = VOTE_RESP_GRANTED;
     sendResponse(_from, _node, RaftVoteRespPacket, resp);
 
@@ -1377,7 +1382,7 @@ bool RaftEngine::sendResponse(
 HandleVoteResult RaftEngine::handleVoteResponse(
     u256 const& _from, h512 const& _node, RaftVoteResp const& _resp, VoteState& _vote_state)
 {
-    if (_resp.term < m_term - 1)
+    if (_resp.term < m_term - 1) // 通常返回来的应该 _resp.term == m_term
     {
         RAFTENGINE_LOG(DEBUG) << LOG_DESC("[#handleVoteResponse]Peer's term is smaller than mine")
                               << LOG_KV("respTerm", _resp.term) << LOG_KV("myTerm", m_term);
@@ -1393,7 +1398,7 @@ HandleVoteResult RaftEngine::handleVoteResponse(
         {
             /// increase elect time
             increaseElectTime();
-            return TO_FOLLOWER;
+            return TO_FOLLOWER; // 如果有大量拒绝投票，则回退为follower
         }
         break;
     }
@@ -1409,7 +1414,6 @@ HandleVoteResult RaftEngine::handleVoteResponse(
     }
     case VoteRespFlag::VOTE_RESP_LASTTERM_ERROR:
     {
-        // 落后的term
         _vote_state.lastTermErr++;
         if (isMajorityVote(_vote_state.lastTermErr))
         {
@@ -1441,7 +1445,7 @@ HandleVoteResult RaftEngine::handleVoteResponse(
     }
     case VoteRespFlag::VOTE_RESP_OUTDATED:
     {
-        _vote_state.outdated++;
+        _vote_state.outdated++; // 落后了不做任何事？
         // do nothing
         break;
     }
@@ -1488,6 +1492,7 @@ bool RaftEngine::shouldSeal()
             RAFTENGINE_LOG(TRACE) << LOG_DESC("[#shouldSeal]I'm not the leader");
             return false;
         }
+        // leader 才可以打包区块，先查看旧的区块是否已经提交
 
         if (m_cfgErr || m_accountType != NodeAccountType::SealerAccount)
         {
@@ -1525,6 +1530,7 @@ bool RaftEngine::shouldSeal()
         }
     }
 
+    // 半数以上节点都拥有该区块
     {
         Guard guard(m_commitMutex);
         if (bool(m_uncommittedBlock))
@@ -1537,6 +1543,7 @@ bool RaftEngine::shouldSeal()
             return false;
         }
     }
+    // 该区块已提交，可以打包新的区块
 
     RAFTENGINE_LOG(TRACE) << LOG_DESC("[#shouldSeal]Seal granted");
     return true;
@@ -1545,13 +1552,14 @@ bool RaftEngine::shouldSeal()
 // leader 提交区块
 bool RaftEngine::commit(Block const& _block)
 {
-    std::unique_lock<std::mutex> ul(m_commitMutex);
+    std::unique_lock<std::mutex> ul(m_commitMutex); // 提交过程互斥
     m_uncommittedBlock = _block;
     m_uncommittedBlockNumber = m_consensusBlockNumber;
     m_waitingForCommitting = true;
     m_commitReady = false;
     RAFTENGINE_LOG(DEBUG) << LOG_DESC("[#commit]Wait to commit block")
                           << LOG_KV("nextHeight", m_uncommittedBlockNumber);
+    // 等待其他线程将m_commitReady改为true
     m_commitCV.wait(ul, [this]() { return m_commitReady; });
 
     m_commitReady = false;

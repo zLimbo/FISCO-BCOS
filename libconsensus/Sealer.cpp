@@ -27,8 +27,12 @@
  * @ modification: rename Consensus.cpp to Sealer.cpp
  */
 #include "Sealer.h"
+#include "libethcore/Protocol.h"
+#include <libethcore/CommonJS.h>
 #include <libethcore/LogEntry.h>
 #include <libsync/SyncStatus.h>
+#include <exception>
+
 using namespace std;
 using namespace dev::sync;
 using namespace dev::blockverifier;
@@ -52,6 +56,8 @@ void Sealer::start()
     /// start  a thread to execute doWork()&&workLoop()
     startWorking();
     m_startConsensus = true;
+
+    
 }
 
 bool Sealer::shouldSeal()
@@ -119,7 +125,7 @@ void Sealer::doWork(bool wait)
             auto maxTxsPerBlock = maxBlockCanSeal();
             /// load transaction from transaction queue
             if (maxTxsPerBlock > tx_num && m_syncTxPool == true && !reachBlockIntervalTime())
-                loadTransactions(maxTxsPerBlock - tx_num);
+                loadTransactions(maxTxsPerBlock - tx_num);  // 尝试填满区块交易
             /// check enough or reach block interval
             if (!checkTxsEnough(maxTxsPerBlock))
             {

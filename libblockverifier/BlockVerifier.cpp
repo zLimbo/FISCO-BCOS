@@ -57,6 +57,7 @@ ExecutiveContext::Ptr BlockVerifier::executeBlock(Block& block, BlockInfo const&
     ExecutiveContext::Ptr context = nullptr;
     try
     {
+        // context = serialExecuteBlock(block, parentBlockInfo);
         if (g_BCOSConfig.version() >= RC2_VERSION && m_enableParallel)
         {
             context = parallelExecuteBlock(block, parentBlockInfo);
@@ -126,6 +127,9 @@ ExecutiveContext::Ptr BlockVerifier::serialExecuteBlock(
         EnvInfo envInfo(block.blockHeader(), m_pNumberHash, 0);
         envInfo.setPrecompiledEngine(executiveContext);
         auto executive = createAndInitExecutive(executiveContext->getState(), envInfo);
+        auto txNum = block.transactions()->size();
+        BLOCKVERIFIER_LOG(INFO) << LOG_BADGE("executeBlock") << LOG_DESC("[zd]")
+            << LOG_KV("txNum", txNum);
         for (size_t i = 0; i < block.transactions()->size(); i++)
         {
             auto& tx = (*block.transactions())[i];
@@ -151,6 +155,8 @@ ExecutiveContext::Ptr BlockVerifier::serialExecuteBlock(
                              << LOG_KV("time(ms)", utcTime() - pastTime)
                              << LOG_KV("txNum", block.transactions()->size())
                              << LOG_KV("num", block.blockHeader().number());
+
+    // return executiveContext;
 
     h256 stateRoot = executiveContext->getState()->rootHash();
     // set stateRoot in receipts

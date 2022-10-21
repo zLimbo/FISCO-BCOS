@@ -45,6 +45,9 @@ deps/**
 .vs/
 .vscode/
 
+#idea
+.idea
+
 # macOS
 .DS_Store
 
@@ -54,3 +57,4 @@ deps/**
 .cache
 cmake-build-debug
 error.log
+run/
