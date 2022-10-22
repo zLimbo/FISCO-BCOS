@@ -57,14 +57,39 @@ ExecutiveContext::Ptr BlockVerifier::executeBlock(Block& block, BlockInfo const&
     ExecutiveContext::Ptr context = nullptr;
     try
     {
-        // context = serialExecuteBlock(block, parentBlockInfo);
-        if (g_BCOSConfig.version() >= RC2_VERSION && m_enableParallel)
+        context = serialExecuteBlock(block, parentBlockInfo);
+        // if (g_BCOSConfig.version() >= RC2_VERSION && m_enableParallel)
+        // {
+        //     context = parallelExecuteBlock(block, parentBlockInfo);
+        // }
+        // else
+        // {
+        //     context = serialExecuteBlock(block, parentBlockInfo);
+        // }
+
         {
-            context = parallelExecuteBlock(block, parentBlockInfo);
-        }
-        else
-        {
-            context = serialExecuteBlock(block, parentBlockInfo);
+            using namespace std::chrono;
+            using Seconds = duration<double>;
+
+            static bool isFirst = false;
+            static steady_clock::time_point last;
+            if (!isFirst)
+            {
+                isFirst = true;
+                last = steady_clock::now();
+            }
+            else
+            {
+                auto txNum = block.transactions()->size();
+                auto cur = steady_clock::now();
+                double take = duration_cast<Seconds>(cur - last).count();
+                double tps = static_cast<double>(txNum) / take;
+                last = cur;
+                LOG(INFO) << LOG_BADGE("[zd]") << LOG_DESC("statistics")
+                           << LOG_KV("height", block.blockHeader().number())
+                           << LOG_KV("txNum", txNum) << LOG_KV("take(s)", take)
+                           << LOG_KV("tps", tps);
+            }
         }
     }
     catch (exception& e)
@@ -122,22 +147,41 @@ ExecutiveContext::Ptr BlockVerifier::serialExecuteBlock(
                              << LOG_KV("num", block.blockHeader().number());
     uint64_t pastTime = utcTime();
 
+
     try
     {
         EnvInfo envInfo(block.blockHeader(), m_pNumberHash, 0);
         envInfo.setPrecompiledEngine(executiveContext);
         auto executive = createAndInitExecutive(executiveContext->getState(), envInfo);
-        auto txNum = block.transactions()->size();
-        BLOCKVERIFIER_LOG(INFO) << LOG_BADGE("executeBlock") << LOG_DESC("[zd]")
-            << LOG_KV("txNum", txNum);
+
+
         for (size_t i = 0; i < block.transactions()->size(); i++)
         {
             auto& tx = (*block.transactions())[i];
 
-            TransactionReceipt::Ptr resultReceipt = execute(tx, executiveContext, executive);
-            block.setTransactionReceipt(i, resultReceipt);
-            executiveContext->getState()->commit();
+            // z code
+            // 合约部署才执行，其他不执行
+            static TransactionReceipt::Ptr resultReceipt;
+            if (!resultReceipt)
+            {
+                resultReceipt = execute(tx, executiveContext, executive);
+                block.setTransactionReceipt(i, resultReceipt);
+                executiveContext->getState()->commit();
+            }
+            else
+            {
+                // LOG(INFO) << LOG_DESC("[zd] NO EXEC") << LOG_KV("index", i);
+                // TransactionReceipt::Ptr resultReceipt =
+                block.setTransactionReceipt(i, resultReceipt);  // 使用之前的静态 receipt
+            }
+
+            // origin code
+            // TransactionReceipt::Ptr resultReceipt = execute(tx, executiveContext, executive);
+            // block.setTransactionReceipt(i, resultReceipt);
+            // executiveContext->getState()->commit();
         }
+
+        
     }
     catch (exception& e)
     {
@@ -156,7 +200,6 @@ ExecutiveContext::Ptr BlockVerifier::serialExecuteBlock(
                              << LOG_KV("txNum", block.transactions()->size())
                              << LOG_KV("num", block.blockHeader().number());
 
-    // return executiveContext;
 
     h256 stateRoot = executiveContext->getState()->rootHash();
     // set stateRoot in receipts
@@ -171,6 +214,7 @@ ExecutiveContext::Ptr BlockVerifier::serialExecuteBlock(
     {
         block.updateSequenceReceiptGas();
     }
+
 
     block.calReceiptRoot();
     block.header().setStateRoot(stateRoot);

@@ -634,7 +634,7 @@ std::shared_ptr<Transactions> TxPool::topTransactions(
             {
                 ret->push_back(*it);
                 txCnt++;
-                if (_updateAvoid) // 更新避免
+                if (_updateAvoid)  // 更新避免
                     _avoid.insert((*it)->hash());
             }
         }

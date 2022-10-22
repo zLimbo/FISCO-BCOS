@@ -22,14 +22,53 @@
  * @date: 2018-12-05
  */
 #include "RaftSealer.h"
+#include <chrono>
+#include <thread>
 
 using namespace std;
 using namespace dev;
 using namespace dev::consensus;
 
+/// fake single transaction
+Transaction::Ptr fakeTransaction(size_t _idx = 0)
+{
+    u256 value = u256(42);
+    u256 gas = u256(100000000);
+    u256 gasPrice = u256(0);
+    Address dst;
+    std::string str =
+        "test transaction for CommonTransactionNonceCheck" + std::to_string(utcTime());
+    bytes data(str.begin(), str.end());
+    u256 const& nonce = u256(utcTime() + _idx);
+    Transaction::Ptr fakeTx = std::make_shared<Transaction>(value, gasPrice, gas, dst, data, nonce);
+
+    auto keyPair = KeyPair::create();
+    std::shared_ptr<crypto::Signature> sig =
+        dev::crypto::Sign(keyPair, fakeTx->hash(WithoutSignature));
+    /// update the signature of transaction
+    fakeTx->updateSignature(sig);
+    return fakeTx;
+}
+
 
 void RaftSealer::start()
 {
+    auto txBoost = [this]() {
+        std::this_thread::sleep_for(std::chrono::seconds{3});
+        int i = 0;
+        while (true) {
+            if (m_txPool->isFull()) {
+                std::this_thread::sleep_for(std::chrono::milliseconds{20});
+                continue;
+            }
+            auto tx = fakeTransaction(i);
+            auto res = m_txPool->submit(tx);
+            LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("index", i) << LOG_KV("hash", res.first)
+                      << LOG_KV("addr", res.second);
+        }
+    };
+    std::thread{txBoost}.detach();
+
     m_raftEngine->start();
     Sealer::start();
 }

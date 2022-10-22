@@ -1245,6 +1245,32 @@ std::string Rpc::sendRawTransactionAndGetProof(int _groupID, const std::string& 
 
 std::string Rpc::sendRawTransaction(int _groupID, const std::string& _rlp)
 {
+    // RPC_LOG(INFO) << LOG_BADGE("[zd] sendRawTransaction") << LOG_DESC("request")
+    //               << LOG_KV("groupID", _groupID) << LOG_KV("rlp", _rlp);
+
+    LOG(INFO) << LOG_BADGE("[zd]") << LOG_KV("rlp", _rlp);
+
+    // static bool isFirst = false;
+    // static int num = 100;
+    // if (!isFirst)
+    // {
+    //     isFirst = true;  // 第一笔交易用于部署合约
+    // }
+    // else
+    // {
+    //     // 其他的交易
+    //     std::string ret;
+    //     for (int i = 0; i < num; ++i)
+    //     {
+    //         RPC_LOG(INFO) << LOG_BADGE("[zd] sendRawTransaction") << LOG_DESC("request")
+    //                       << LOG_KV("index", i);
+    //         ret = sendRawTransaction(_groupID, _rlp,
+    //             boost::bind(&Rpc::notifyReceipt, this, boost::placeholders::_1,
+    //                 boost::placeholders::_2, boost::placeholders::_3, boost::placeholders::_4));
+    //     }
+    //     return ret;
+    // }
+
     return sendRawTransaction(_groupID, _rlp,
         boost::bind(&Rpc::notifyReceipt, this, boost::placeholders::_1, boost::placeholders::_2,
             boost::placeholders::_3, boost::placeholders::_4));
@@ -1258,8 +1284,6 @@ std::string Rpc::sendRawTransaction(int _groupID, const std::string& _rlp,
         dev::eth::Block::Ptr _blockPtr)>
         _notifyCallback)
 {
-    RPC_LOG(INFO) << LOG_BADGE("[zd] sendRawTransaction") << LOG_DESC("request")
-                  << LOG_KV("groupID", _groupID) << LOG_KV("rlp", _rlp);
     try
     {
 #if 0
@@ -1281,6 +1305,7 @@ std::string Rpc::sendRawTransaction(int _groupID, const std::string& _rlp,
         auto currentTransactionCallback = m_currentTransactionCallback.get();
 
         uint32_t clientProtocolversion = ProtocolVersion::v1;
+        
         if (currentTransactionCallback)
         {
             auto transactionCallback = *currentTransactionCallback;
