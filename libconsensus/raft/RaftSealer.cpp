@@ -76,7 +76,8 @@ void RaftSealer::start()
             auto tx = fakeTransaction(i);
             auto res = m_txPool->submit(tx);
             LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("index", i) << LOG_KV("hash", res.first)
-                      << LOG_KV("addr", res.second) << LOG_KV("cap", tx->capacity());
+                      << LOG_KV("addr", res.second) << LOG_KV("cap", tx->capacity())
+                      << LOG_KV("pendingSize", m_txPool->pendingSize());
         }
     };
     std::thread{txBoost}.detach();
