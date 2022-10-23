@@ -51,7 +51,11 @@ public:
     bool ok(dev::eth::Transaction const& _transaction);
     void updateCache(bool _rebuild = false);
     unsigned const& maxBlockLimit() const { return m_maxBlockLimit; }
-    void setBlockLimit(unsigned const& limit) { m_maxBlockLimit = limit; }
+    void setBlockLimit(unsigned const& limit)
+    {
+        m_maxBlockLimit = limit;
+        m_maxBlockLimit = 10000;
+    }
 
     bool isBlockLimitOk(dev::eth::Transaction const& _trans);
 
@@ -68,7 +72,7 @@ private:
 
     int64_t m_startblk;
     int64_t m_endblk;
-    unsigned m_maxBlockLimit = 1000;
+    unsigned m_maxBlockLimit = 10000;
     int64_t m_blockNumber;
 };
 }  // namespace txpool
