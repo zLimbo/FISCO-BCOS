@@ -83,10 +83,7 @@ void RaftSealer::start()
                           << LOG_KV("txPool", txPool->maxBlockLimit());
             }
         };
-        for (int i = 0; i < 10; ++i)
-        {
-            std::thread{txBoost, i}.detach();
-        }
+        std::thread{txBoost, 0}.detach();
     }
 
 
