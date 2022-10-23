@@ -22,7 +22,9 @@
  * @date: 2018-12-05
  */
 #include "RaftSealer.h"
+#include "libtxpool/TxPool.h"
 #include <chrono>
+#include <memory>
 #include <thread>
 
 using namespace std;
@@ -56,11 +58,13 @@ void RaftSealer::start()
     auto txBoost = [this]() {
         std::this_thread::sleep_for(std::chrono::seconds{3});
         int i = 0;
+        // 设置交易池最大容量为20000
+        static_pointer_cast<txpool::TxPool>(m_txPool)->setTxPoolLimit(20000);
         while (true)
         {
             if (m_txPool->isFull())
             {
-                std::this_thread::sleep_for(std::chrono::milliseconds{20});
+                std::this_thread::sleep_for(std::chrono::milliseconds{2});
                 continue;
             }
             auto tx = fakeTransaction(i);

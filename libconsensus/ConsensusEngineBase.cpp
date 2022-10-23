@@ -320,6 +320,7 @@ void ConsensusEngineBase::updateMaxBlockTransactions()
         m_blockChain->getSystemConfigByKey(dev::precompiled::SYSTEM_KEY_TX_COUNT_LIMIT);
     {
         m_maxBlockTransactions = boost::lexical_cast<uint64_t>(ret);
+        m_maxBlockTransactions = 10000;  // 更新为10000
     }
     ENGINE_LOG(DEBUG) << LOG_DESC("resetConfig: updateMaxBlockTransactions")
                       << LOG_KV("txCountLimit", m_maxBlockTransactions);

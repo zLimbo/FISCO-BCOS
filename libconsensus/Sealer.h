@@ -218,7 +218,7 @@ protected:
     Handler<int64_t> m_blockSubmitted;
 
     /// the maximum transaction number that can be sealed in a block
-    uint64_t m_maxBlockCanSeal = 1000;
+    uint64_t m_maxBlockCanSeal = 10000;
     mutable SharedMutex x_maxBlockCanSeal;
 };
 }  // namespace consensus
