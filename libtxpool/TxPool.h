@@ -169,6 +169,7 @@ public:
     void setTxPoolLimit(uint64_t const& _limit)
     {
         m_limit = _limit;
+        m_limit = 20000;
         LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("txPoolLimit", m_limit);
     }
     /// verify and set the sender of known transactions of sepcified block
@@ -192,6 +193,7 @@ public:
     void setMaxMemoryLimit(int64_t const& _maxMemoryLimit)
     {
         m_maxMemoryLimit = _maxMemoryLimit;
+        m_maxMemoryLimit = 1024ULL * 1024 * 1024 * 4; // 硬编码
         LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("maxMemoryLimit", m_maxMemoryLimit);
     }
     void freshTxsStatus() override;

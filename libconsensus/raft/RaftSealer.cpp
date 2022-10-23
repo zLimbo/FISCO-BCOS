@@ -59,16 +59,16 @@ void RaftSealer::start()
     auto txBoost = [this]() {
         std::this_thread::sleep_for(std::chrono::seconds{3});
         int i = 0;
-        uint64_t poolLimit = 20000LL;
-        uint64_t memLimit = 1024LL * 1024 * 1024 * 4;
+        // uint64_t poolLimit = 20000LL;
+        // uint64_t memLimit = 1024LL * 1024 * 1024 * 4;
         // 设置交易池最大容量为20000
-        static_pointer_cast<txpool::TxPool>(m_txPool)->setTxPoolLimit(poolLimit);
-        static_pointer_cast<txpool::TxPool>(m_txPool)->setMaxMemoryLimit(memLimit);
+        // static_pointer_cast<txpool::TxPool>(m_txPool)->setTxPoolLimit(poolLimit);
+        // static_pointer_cast<txpool::TxPool>(m_txPool)->setMaxMemoryLimit(memLimit);
         while (true)
         {
             if (m_txPool->isFull())
             {
-                LOG(INFO) << LOG_DESC("[zd] full")
+                LOG(INFO) << LOG_DESC("[zd]")
                           << LOG_KV("txPool.size", m_txPool->pendingSize());
                 std::this_thread::sleep_for(std::chrono::milliseconds{2});
                 continue;
