@@ -64,7 +64,7 @@ void RaftSealer::start()
         txPool->setTxPoolLimit(poolLimit);
         txPool->setMaxMemoryLimit(memLimit);
 
-        auto txBoost = [&](int id) {
+        auto txBoost = [=](int id) {
             std::this_thread::sleep_for(std::chrono::seconds{3});
             int i = 0;
             while (true)
