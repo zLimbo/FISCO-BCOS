@@ -56,8 +56,10 @@ void RaftSealer::start()
     auto txBoost = [this]() {
         std::this_thread::sleep_for(std::chrono::seconds{3});
         int i = 0;
-        while (true) {
-            if (m_txPool->isFull()) {
+        while (true)
+        {
+            if (m_txPool->isFull())
+            {
                 std::this_thread::sleep_for(std::chrono::milliseconds{20});
                 continue;
             }
@@ -106,8 +108,13 @@ void RaftSealer::handleBlock()
         m_raftEngine->resetLastBlockTime();
         return;
     }
-
+    auto before = std::chrono::steady_clock::now();
     bool succ = m_raftEngine->commit(*(m_sealing.block));
+    double take = std::chrono::duration_cast<std::chrono::duration<double>>(
+        std::chrono::steady_clock::now() - before)
+                      .count();
+    LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("height", m_sealing.block->header().number())
+              << LOG_KV("consensus take", take) << endl;
     if (!succ)
     {
         reset();
