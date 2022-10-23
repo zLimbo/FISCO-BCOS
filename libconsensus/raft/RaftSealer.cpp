@@ -24,6 +24,7 @@
 #include "RaftSealer.h"
 #include "libtxpool/TxPool.h"
 #include <chrono>
+#include <cstdint>
 #include <memory>
 #include <thread>
 
@@ -58,19 +59,24 @@ void RaftSealer::start()
     auto txBoost = [this]() {
         std::this_thread::sleep_for(std::chrono::seconds{3});
         int i = 0;
+        uint64_t poolLimit = 20000LL;
+        uint64_t memLimit = 1024LL * 1024 * 1024 * 4;
         // 设置交易池最大容量为20000
-        static_pointer_cast<txpool::TxPool>(m_txPool)->setTxPoolLimit(20000);
+        static_pointer_cast<txpool::TxPool>(m_txPool)->setTxPoolLimit(poolLimit);
+        static_pointer_cast<txpool::TxPool>(m_txPool)->setMaxMemoryLimit(memLimit);
         while (true)
         {
             if (m_txPool->isFull())
             {
+                LOG(INFO) << LOG_DESC("[zd] full")
+                          << LOG_KV("txPool.size", m_txPool->pendingSize());
                 std::this_thread::sleep_for(std::chrono::milliseconds{2});
                 continue;
             }
             auto tx = fakeTransaction(i);
             auto res = m_txPool->submit(tx);
             LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("index", i) << LOG_KV("hash", res.first)
-                      << LOG_KV("addr", res.second);
+                      << LOG_KV("addr", res.second) << LOG_KV("cap", tx->capacity());
         }
     };
     std::thread{txBoost}.detach();

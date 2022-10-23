@@ -166,7 +166,11 @@ public:
 
     /// protocol id used when register handler to p2p module
     virtual PROTOCOL_ID const& getProtocolId() const override { return m_protocolId; }
-    void setTxPoolLimit(uint64_t const& _limit) { m_limit = _limit; }
+    void setTxPoolLimit(uint64_t const& _limit)
+    {
+        m_limit = _limit;
+        LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("txPoolLimit", m_limit);
+    }
     /// verify and set the sender of known transactions of sepcified block
     void verifyAndSetSenderForBlock(dev::eth::Block& block) override;
     bool txExists(dev::h256 const& txHash) override;
@@ -185,7 +189,11 @@ public:
 
     bool initPartiallyBlock(dev::eth::Block::Ptr _block) override;
 
-    void setMaxMemoryLimit(int64_t const& _maxMemoryLimit) { m_maxMemoryLimit = _maxMemoryLimit; }
+    void setMaxMemoryLimit(int64_t const& _maxMemoryLimit)
+    {
+        m_maxMemoryLimit = _maxMemoryLimit;
+        LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("maxMemoryLimit", m_maxMemoryLimit);
+    }
     void freshTxsStatus() override;
 
     void registerAlignedTimeGetter(std::function<int64_t()> _alignedTimeGetter)
