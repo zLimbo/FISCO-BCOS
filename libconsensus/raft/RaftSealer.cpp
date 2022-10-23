@@ -75,7 +75,7 @@ void RaftSealer::start()
                 continue;
             }
             auto tx = fakeTransaction(i);
-            auto res = txPool->insert(tx);
+            auto res = txPool->submitTransactions(tx);
             LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("id", id) << LOG_KV("index", i)
                       << LOG_KV("ok", res) << LOG_KV("cap", tx->capacity())
                       << LOG_KV("pendingSize", txPool->pendingSize())
