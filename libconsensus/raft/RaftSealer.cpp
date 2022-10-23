@@ -77,7 +77,7 @@ void RaftSealer::start()
             auto tx = fakeTransaction(i);
             auto res = txPool->submitTransactions(tx);
             LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("id", id) << LOG_KV("index", i)
-                      << LOG_KV("ok", res) << LOG_KV("cap", tx->capacity())
+                      << LOG_KV("txhash", res.first) << LOG_KV("cap", tx->capacity())
                       << LOG_KV("pendingSize", txPool->pendingSize())
                       << LOG_KV("txPool", txPool->maxBlockLimit());
         }
