@@ -56,31 +56,39 @@ Transaction::Ptr fakeTransaction(size_t _idx = 0)
 
 void RaftSealer::start()
 {
-    auto txBoost = [this]() {
-        std::this_thread::sleep_for(std::chrono::seconds{3});
-        int i = 0;
-        // uint64_t poolLimit = 20000LL;
-        // uint64_t memLimit = 1024LL * 1024 * 1024 * 4;
+    {
+        auto txPool = static_pointer_cast<txpool::TxPool>(m_txPool);
+        uint64_t poolLimit = 20000LL;
+        uint64_t memLimit = 1024LL * 1024 * 1024 * 4;
         // 设置交易池最大容量为20000
-        // static_pointer_cast<txpool::TxPool>(m_txPool)->setTxPoolLimit(poolLimit);
-        // static_pointer_cast<txpool::TxPool>(m_txPool)->setMaxMemoryLimit(memLimit);
-        while (true)
-        {
-            if (m_txPool->isFull())
+        txPool->setTxPoolLimit(poolLimit);
+        txPool->setMaxMemoryLimit(memLimit);
+
+        auto txBoost = [&](int id) {
+            std::this_thread::sleep_for(std::chrono::seconds{3});
+            int i = 0;
+            while (true)
             {
-                LOG(INFO) << LOG_DESC("[zd]")
-                          << LOG_KV("txPool.size", m_txPool->pendingSize());
-                std::this_thread::sleep_for(std::chrono::milliseconds{2});
-                continue;
+                if (txPool->isFull())
+                {
+                    LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("txPool.size", txPool->pendingSize());
+                    std::this_thread::sleep_for(std::chrono::milliseconds{2});
+                    continue;
+                }
+                auto tx = fakeTransaction(i);
+                auto res = txPool->insert(tx);
+                LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("id", id) << LOG_KV("index", i)
+                          << LOG_KV("ok", res) << LOG_KV("cap", tx->capacity())
+                          << LOG_KV("pendingSize", txPool->pendingSize())
+                          << LOG_KV("txPool", txPool->maxBlockLimit());
             }
-            auto tx = fakeTransaction(i);
-            auto res = m_txPool->submit(tx);
-            LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("index", i) << LOG_KV("hash", res.first)
-                      << LOG_KV("addr", res.second) << LOG_KV("cap", tx->capacity())
-                      << LOG_KV("pendingSize", m_txPool->pendingSize());
+        };
+        for (int i = 0; i < 10; ++i)
+        {
+            std::thread{txBoost, i}.detach();
         }
-    };
-    std::thread{txBoost}.detach();
+    }
+
 
     m_raftEngine->start();
     Sealer::start();

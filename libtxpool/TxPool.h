@@ -193,7 +193,7 @@ public:
     void setMaxMemoryLimit(int64_t const& _maxMemoryLimit)
     {
         m_maxMemoryLimit = _maxMemoryLimit;
-        m_maxMemoryLimit = 1024ULL * 1024 * 1024 * 4; // 硬编码
+        m_maxMemoryLimit = 1024ULL * 1024 * 1024 * 4;  // 硬编码
         LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("maxMemoryLimit", m_maxMemoryLimit);
     }
     void freshTxsStatus() override;
@@ -255,7 +255,10 @@ private:
     bool removeTrans(h256 const& _txHash, bool _needTriggerCallback = true,
         std::shared_ptr<dev::eth::Block> _block = nullptr, size_t _index = 0);
 
+public:
     bool insert(dev::eth::Transaction::Ptr _tx);
+
+private:
     bool inline txPoolNonceCheck(dev::eth::Transaction::Ptr const& tx)
     {
         if (!m_txpoolNonceChecker->isNonceOk(*tx, true))
