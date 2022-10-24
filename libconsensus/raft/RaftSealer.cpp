@@ -109,7 +109,8 @@ void RaftSealer::handleBlock()
                          << LOG_KV("blockNumber", m_sealing.block->header().number())
                          << LOG_KV("txNum", m_sealing.block->getTransactionSize())
                          << LOG_KV("hash", m_sealing.block->header().hash().abridged())
-                         << LOG_KV("now", utcTime());
+                         << LOG_KV("now", utcTime())
+                         << LOG_KV("pendingSize", m_txPool->pendingSize());
 
     if (m_sealing.block->getTransactionSize() == 0)
     {
