@@ -110,7 +110,6 @@ public:
 
     bool isLeader() const
     {
-        Guard l(m_mutex);
         return getState() == RaftRole::EN_STATE_LEADER;
     }
 
