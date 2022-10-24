@@ -132,9 +132,11 @@ void RaftSealer::handleBlock()
 
     double consensusTake = duration_cast<Seconds>(steady_clock::now() - before).count();
 
-    
+
     static bool isFirst = false;
     static steady_clock::time_point last;
+    static double totalTake = 0.0;
+    static double totalTxNum = 0.0;
     if (!isFirst)
     {
         isFirst = true;
@@ -146,9 +148,12 @@ void RaftSealer::handleBlock()
         double take = duration_cast<Seconds>(cur - last).count();
         double tps = static_cast<double>(txNum) / take;
         last = cur;
+        totalTake += take;
+        totalTxNum += static_cast<double>(txNum);
+        double totalTps = totalTxNum / totalTake;
         LOG(INFO) << LOG_BADGE("zd") << LOG_DESC("statistics")
                   << LOG_KV("height", block->blockHeader().number()) << LOG_KV("txNum", txNum)
-                  << LOG_KV("take(s)", take) << LOG_KV("tps", tps)
+                  << LOG_KV("take(s)", take) << LOG_KV("tps", tps) << LOG_KV("totalTps", totalTps)
                   << LOG_KV("consensus take", consensusTake);
     }
 
