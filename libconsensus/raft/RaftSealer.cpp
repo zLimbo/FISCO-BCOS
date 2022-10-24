@@ -31,17 +31,18 @@ using namespace std;
 using namespace dev;
 using namespace dev::consensus;
 
+static atomic<uint64_t> aTxCnt{0};
+
 /// fake single transaction
 Transaction::Ptr fakeTransaction()
 {
-    static atomic<uint64_t> k{0};
     u256 value = u256(42);
     u256 gas = u256(100000000);
     u256 gasPrice = u256(0);
     Address dst;
     std::string str = string(512, 'x') + std::to_string(utcTime());
     bytes data(str.begin(), str.end());
-    u256 const& nonce = u256(k++);
+    u256 const& nonce = u256(aTxCnt++);
     Transaction::Ptr fakeTx = std::make_shared<Transaction>(value, gasPrice, gas, dst, data, nonce);
 
     auto keyPair = KeyPair::create();
@@ -56,11 +57,16 @@ Transaction::Ptr fakeTransaction()
 void RaftSealer::start()
 {
     auto txPool = static_pointer_cast<txpool::TxPool>(m_txPool);
-    auto txBoost = [txPool](int id) {
+    auto txBoost = [this, txPool](int id) {
         std::this_thread::sleep_for(std::chrono::seconds{3});
         int i = 0;
         while (true)
         {
+            if (m_raftEngine->isLeader())
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds{1000});
+                continue;
+            }
             if (txPool->isFull())
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds{20});
@@ -158,6 +164,7 @@ void RaftSealer::handleBlock()
         double totalTps = totalTxNum / totalTake;
         LOG(INFO) << LOG_BADGE("zd") << LOG_DESC("statistics")
                   << LOG_KV("height", block->blockHeader().number()) << LOG_KV("txNum", txNum)
+                  << LOG_KV("totalTxNum", totalTxNum) << LOG_KV("aTxCnt", aTxCnt)
                   << LOG_KV("take(s)", take) << LOG_KV("tps", tps) << LOG_KV("totalTps", totalTps)
                   << LOG_KV("consensus take", consensusTake);
     }

@@ -108,6 +108,12 @@ public:
     void resetLastBlockTime() { m_lastBlockTime = dev::utcSteadyTime(); }
     const std::string consensusStatus() override;
 
+    bool isLeader() const
+    {
+        Guard l(m_mutex);
+        return getState() == RaftRole::EN_STATE_LEADER;
+    }
+
 protected:
     void initRaftEnv();
     void onRecvRaftMessage(dev::p2p::NetworkException _exception,
@@ -169,6 +175,7 @@ protected:
         m_leader = _leader;
     }
 
+
     void setVote(raft::NodeIndex const& _candidate)
     {
         Guard l(m_mutex);
@@ -206,7 +213,7 @@ protected:
     unsigned m_increaseTime;
 
     // message queue, defined in Common.h， concurrent_queue 阻塞队列
-    RaftMsgQueue m_msgQueue; 
+    RaftMsgQueue m_msgQueue;
     // role of node
     RaftRole m_state = EN_STATE_FOLLOWER;
 
@@ -215,7 +222,7 @@ protected:
     size_t m_lastLeaderTerm = 0;
 
     raft::NodeIndex m_leader;
-    raft::NodeIndex m_vote; // vote for
+    raft::NodeIndex m_vote;  // vote for
 
     struct BlockRef
     {
