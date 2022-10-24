@@ -24,6 +24,7 @@
 #include "RaftSealer.h"
 #include "libtxpool/TxPool.h"
 #include <chrono>
+#include <cstdint>
 #include <thread>
 
 using namespace std;
@@ -31,15 +32,16 @@ using namespace dev;
 using namespace dev::consensus;
 
 /// fake single transaction
-Transaction::Ptr fakeTransaction(size_t _idx = 0)
+Transaction::Ptr fakeTransaction()
 {
+    static atomic<uint64_t> k{0};
     u256 value = u256(42);
     u256 gas = u256(100000000);
     u256 gasPrice = u256(0);
     Address dst;
     std::string str = string(512, 'x') + std::to_string(utcTime());
     bytes data(str.begin(), str.end());
-    u256 const& nonce = u256(utcTime() + _idx);
+    u256 const& nonce = u256(k++);
     Transaction::Ptr fakeTx = std::make_shared<Transaction>(value, gasPrice, gas, dst, data, nonce);
 
     auto keyPair = KeyPair::create();
@@ -64,12 +66,12 @@ void RaftSealer::start()
                 std::this_thread::sleep_for(std::chrono::milliseconds{20});
                 continue;
             }
-            auto tx = fakeTransaction(i);
+            auto tx = fakeTransaction();
             auto res = txPool->submit(tx);
             ++i;
             if (i % 5000)
                 continue;
-            LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("id", id) << LOG_KV("index", i)
+            LOG(INFO) << LOG_DESC("zd") << LOG_KV("id", id) << LOG_KV("index", i)
                       << LOG_KV("hash", res.first) << LOG_KV("addr", res.second)
                       << LOG_KV("cap", tx->capacity())
                       << LOG_KV("pendingSize", txPool->pendingSize())
@@ -109,7 +111,10 @@ void RaftSealer::handleBlock()
                          << LOG_KV("blockNumber", m_sealing.block->header().number())
                          << LOG_KV("hash", m_sealing.block->header().hash().abridged())
                          << LOG_KV("now", utcTime())
+                         << LOG_KV("height", m_sealing.block->blockHeader().number())
+                         << LOG_KV("txNum", m_sealing.block->transactions()->size())
                          << LOG_KV("pendingSize", m_txPool->pendingSize());
+
 
     if (m_sealing.block->getTransactionSize() == 0)
     {

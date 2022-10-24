@@ -135,7 +135,7 @@ ExecutiveContext::Ptr BlockVerifier::serialExecuteBlock(
             auto& tx = (*block.transactions())[i];
 
             // z code
-            // 合约部署才执行，其他不执行
+            
             static TransactionReceipt::Ptr resultReceipt;
             if (!resultReceipt)
             {
