@@ -75,7 +75,7 @@ void RaftSealer::start()
             auto res = txPool->submit(tx);
             if (aTxCnt % 5000)
                 continue;
-            LOG(INFO) << LOG_DESC("zd") << LOG_KV("id", id) << LOG_KV("index", i)
+            LOG(INFO) << LOG_DESC("zd") << LOG_KV("id", id) << LOG_KV("aTxCnt", aTxCnt)
                       << LOG_KV("hash", res.first) << LOG_KV("addr", res.second)
                       << LOG_KV("cap", tx->capacity())
                       << LOG_KV("pendingSize", txPool->pendingSize())
