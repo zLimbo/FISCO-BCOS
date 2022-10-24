@@ -67,7 +67,7 @@ void RaftSealer::start()
             auto tx = fakeTransaction(i);
             auto res = txPool->submit(tx);
             ++i;
-            if (i % 1000)
+            if (i % 5000)
                 continue;
             LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("id", id) << LOG_KV("index", i)
                       << LOG_KV("hash", res.first) << LOG_KV("addr", res.second)
