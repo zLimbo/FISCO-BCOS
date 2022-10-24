@@ -59,10 +59,9 @@ void RaftSealer::start()
     auto txPool = static_pointer_cast<txpool::TxPool>(m_txPool);
     auto txBoost = [this, txPool](int id) {
         std::this_thread::sleep_for(std::chrono::seconds{3});
-        int i = 0;
         while (true)
         {
-            if (m_raftEngine->isLeader())
+            if (!m_raftEngine->isLeader())
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds{1000});
                 continue;
@@ -74,8 +73,7 @@ void RaftSealer::start()
             }
             auto tx = fakeTransaction();
             auto res = txPool->submit(tx);
-            ++i;
-            if (i % 5000)
+            if (aTxCnt % 5000)
                 continue;
             LOG(INFO) << LOG_DESC("zd") << LOG_KV("id", id) << LOG_KV("index", i)
                       << LOG_KV("hash", res.first) << LOG_KV("addr", res.second)
