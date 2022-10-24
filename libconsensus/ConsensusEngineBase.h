@@ -297,7 +297,7 @@ protected:
     virtual bool locatedInChosedConsensensusNodes() const { return m_idx != MAXIDX; }
 
 protected:
-    std::atomic<uint64_t> m_maxBlockTransactions = {1000};
+    std::atomic<uint64_t> m_maxBlockTransactions = {10000}; // zd 1000 -> 10000
     // record the sealer list has been updated or not
     std::atomic_bool m_sealerListUpdated = {true};
     int64_t m_lastSealerListUpdateNumber = 0;

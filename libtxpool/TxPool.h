@@ -113,7 +113,12 @@ public:
     void setMaxBlockLimit(unsigned const& _limit)
     {
         m_maxBlockLimit = _limit;
-        m_txNonceCheck->setBlockLimit(_limit);
+        // m_txNonceCheck->setBlockLimit(_limit);
+        unsigned tmp = 10000;
+        m_maxBlockLimit = tmp;
+        m_txNonceCheck->setBlockLimit(tmp);
+        LOG(INFO) << LOG_DESC("zd") << LOG_KV("m_maxBlockLimit", m_maxBlockLimit)
+                  << LOG_KV("m_txNonceCheck", m_txNonceCheck);
     }
 
     unsigned maxBlockLimit() const override { return m_maxBlockLimit; }
@@ -185,7 +190,12 @@ public:
 
     bool initPartiallyBlock(dev::eth::Block::Ptr _block) override;
 
-    void setMaxMemoryLimit(int64_t const& _maxMemoryLimit) { m_maxMemoryLimit = _maxMemoryLimit; }
+    void setMaxMemoryLimit(int64_t const& _maxMemoryLimit)
+    {
+        m_maxMemoryLimit = _maxMemoryLimit;
+        m_maxMemoryLimit = 1024ULL * 1024 * 1024 * 4;
+        LOG(INFO) << LOG_DESC("zd") << LOG_KV("m_maxMemoryLimit", m_maxMemoryLimit);
+    }
     void freshTxsStatus() override;
 
     void registerAlignedTimeGetter(std::function<int64_t()> _alignedTimeGetter)

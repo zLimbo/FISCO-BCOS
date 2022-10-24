@@ -63,7 +63,10 @@ public:
     virtual IDXTYPE nodeIdx() const = 0;
     /// update the context of PBFT after commit a block into the block-chain
     virtual void reportBlock(dev::eth::Block const& block) = 0;
-    virtual uint64_t maxBlockTransactions() { return 1000; }
+    virtual uint64_t maxBlockTransactions()
+    {
+        return 10000;  // zd
+    }
     virtual VIEWTYPE view() const { return 0; }
     virtual VIEWTYPE toView() const { return 0; }
     virtual void setBlockFactory(dev::eth::BlockFactory::Ptr) {}
