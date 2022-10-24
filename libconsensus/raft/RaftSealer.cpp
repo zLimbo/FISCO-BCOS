@@ -37,8 +37,7 @@ Transaction::Ptr fakeTransaction(size_t _idx = 0)
     u256 gas = u256(100000000);
     u256 gasPrice = u256(0);
     Address dst;
-    std::string str =
-        "test transaction for CommonTransactionNonceCheck" + std::to_string(utcTime());
+    std::string str = string(512, 'x') + std::to_string(utcTime());
     bytes data(str.begin(), str.end());
     u256 const& nonce = u256(utcTime() + _idx);
     Transaction::Ptr fakeTx = std::make_shared<Transaction>(value, gasPrice, gas, dst, data, nonce);
@@ -68,11 +67,12 @@ void RaftSealer::start()
             auto tx = fakeTransaction(i);
             auto res = txPool->submit(tx);
             ++i;
-            if (i % 1000) continue;
+            if (i % 1000)
+                continue;
             LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("index", i) << LOG_KV("hash", res.first)
-                      << LOG_KV("addr", res.second) << LOG_KV("pendingSize", txPool->pendingSize())
+                      << LOG_KV("addr", res.second) << LOG_KV("cap", tx->capacity())
+                      << LOG_KV("pendingSize", txPool->pendingSize())
                       << LOG_KV("", txPool->maxBlockLimit());
-
         }
     };
     std::thread{txBoost}.detach();
