@@ -31,6 +31,7 @@
 #include <libethcore/CommonJS.h>
 #include <libethcore/LogEntry.h>
 #include <libsync/SyncStatus.h>
+#include <chrono>
 #include <exception>
 
 using namespace std;
@@ -56,8 +57,6 @@ void Sealer::start()
     /// start  a thread to execute doWork()&&workLoop()
     startWorking();
     m_startConsensus = true;
-
-    
 }
 
 bool Sealer::shouldSeal()
@@ -125,7 +124,18 @@ void Sealer::doWork(bool wait)
             auto maxTxsPerBlock = maxBlockCanSeal();
             /// load transaction from transaction queue
             if (maxTxsPerBlock > tx_num && m_syncTxPool == true && !reachBlockIntervalTime())
+            {
+                using namespace std::chrono;
+                using Seconds = duration<double>;
+                auto before = steady_clock::now();
                 loadTransactions(maxTxsPerBlock - tx_num);  // 尝试填满区块交易
+                auto take = duration_cast<Seconds>(steady_clock::now() - before).count();
+                LOG(INFO) << LOG_DESC("zd")
+                          << LOG_KV("blockNumber", m_sealing.block->header().number())
+                          << LOG_KV("txNum", m_sealing.block->getTransactionSize())
+                          << LOG_KV("loadTransactions take", take);
+            }
+
             /// check enough or reach block interval
             if (!checkTxsEnough(maxTxsPerBlock))
             {
