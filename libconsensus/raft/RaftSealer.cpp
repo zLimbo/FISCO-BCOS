@@ -73,7 +73,7 @@ void RaftSealer::start()
                       << LOG_KV("hash", res.first) << LOG_KV("addr", res.second)
                       << LOG_KV("cap", tx->capacity())
                       << LOG_KV("pendingSize", txPool->pendingSize())
-                      << LOG_KV("", txPool->maxBlockLimit());
+                      << LOG_KV("maxBlockLimit", txPool->maxBlockLimit());
         }
     };
     std::thread{txBoost, 0}.detach();
@@ -107,7 +107,6 @@ void RaftSealer::handleBlock()
 
     RAFTSEALER_LOG(INFO) << LOG_DESC("[handleBlock]++++++++++++++++ Generating seal")
                          << LOG_KV("blockNumber", m_sealing.block->header().number())
-                         << LOG_KV("txNum", m_sealing.block->getTransactionSize())
                          << LOG_KV("hash", m_sealing.block->header().hash().abridged())
                          << LOG_KV("now", utcTime())
                          << LOG_KV("pendingSize", m_txPool->pendingSize());

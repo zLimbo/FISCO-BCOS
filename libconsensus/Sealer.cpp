@@ -130,7 +130,7 @@ void Sealer::doWork(bool wait)
                 auto before = steady_clock::now();
                 loadTransactions(maxTxsPerBlock - tx_num);  // 尝试填满区块交易
                 auto take = duration_cast<Seconds>(steady_clock::now() - before).count();
-                LOG(INFO) << LOG_DESC("zd")
+                LOG(INFO) << LOG_DESC("zd") << LOG_KV("maxTxsPerBlock", maxTxsPerBlock)
                           << LOG_KV("blockNumber", m_sealing.block->header().number())
                           << LOG_KV("txNum", m_sealing.block->getTransactionSize())
                           << LOG_KV("loadTransactions take", take);

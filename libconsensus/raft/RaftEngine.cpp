@@ -1676,7 +1676,7 @@ bool RaftEngine::reachBlockIntervalTime()
     auto parentTime = m_lastBlockTime;
 
     // return nowTime - parentTime >= g_BCOSConfig.c_intervalBlockTime;
-    return nowTime - parentTime >= 1000;
+    return nowTime - parentTime >= 1;
 }
 
 const std::string RaftEngine::consensusStatus()
