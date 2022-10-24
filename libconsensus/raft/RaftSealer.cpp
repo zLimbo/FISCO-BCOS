@@ -58,7 +58,6 @@ void RaftSealer::start()
 {
     auto txPool = static_pointer_cast<txpool::TxPool>(m_txPool);
     auto txBoost = [this, txPool](int id) {
-        std::this_thread::sleep_for(std::chrono::seconds{3});
         while (true)
         {
             if (!m_raftEngine->isLeader())
@@ -86,6 +85,7 @@ void RaftSealer::start()
     std::thread{txBoost, 1}.detach();
     std::thread{txBoost, 2}.detach();
 
+    std::this_thread::sleep_for(std::chrono::seconds{3});
 
     m_raftEngine->start();
     Sealer::start();
