@@ -135,7 +135,6 @@ void RaftSealer::handleBlock()
 
     static bool isFirst = false;
     static steady_clock::time_point last;
-    static double totalTake = 0.0;
     static double totalTxNum = 0.0;
     if (!isFirst)
     {
@@ -144,12 +143,13 @@ void RaftSealer::handleBlock()
     }
     else
     {
+        static steady_clock::time_point start = steady_clock::now();
         auto cur = steady_clock::now();
         double take = duration_cast<Seconds>(cur - last).count();
         double tps = static_cast<double>(txNum) / take;
         last = cur;
-        totalTake += take;
         totalTxNum += static_cast<double>(txNum);
+        double totalTake = duration_cast<Seconds>(cur - start).count();
         double totalTps = totalTxNum / totalTake;
         LOG(INFO) << LOG_BADGE("zd") << LOG_DESC("statistics")
                   << LOG_KV("height", block->blockHeader().number()) << LOG_KV("txNum", txNum)
