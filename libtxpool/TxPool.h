@@ -180,7 +180,7 @@ public:
     {
         // UpgradableGuard l(m_lock);
         // return m_txsQueue.size() >= m_limit;
-        return m_txsQueue.size() >= 1000000;  // zd
+        return m_txsQueue.size() >= 20000000;  // zd 10G
     }
 
     dev::ThreadPool::Ptr workerPool() { return m_workerPool; }
@@ -194,7 +194,7 @@ public:
     void setMaxMemoryLimit(int64_t const& _maxMemoryLimit)
     {
         m_maxMemoryLimit = _maxMemoryLimit;
-        m_maxMemoryLimit = 1024ULL * 1024 * 1024 * 4;
+        m_maxMemoryLimit = 1024ULL * 1024 * 1024 * 10;
         LOG(INFO) << LOG_DESC("zd") << LOG_KV("m_maxMemoryLimit", m_maxMemoryLimit);
     }
     void freshTxsStatus() override;

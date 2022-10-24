@@ -82,10 +82,8 @@ void RaftSealer::start()
         }
     };
     std::thread{txBoost, 0}.detach();
-    std::thread{txBoost, 1}.detach();
-    std::thread{txBoost, 2}.detach();
 
-    std::this_thread::sleep_for(std::chrono::seconds{3});
+    std::this_thread::sleep_for(std::chrono::seconds{60});
 
     m_raftEngine->start();
     Sealer::start();
