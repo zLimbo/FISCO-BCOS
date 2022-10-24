@@ -180,7 +180,7 @@ public:
     {
         // UpgradableGuard l(m_lock);
         // return m_txsQueue.size() >= m_limit;
-        return m_txsQueue.size() >= 15000; // zd
+        return m_txsQueue.size() >= 20000; // zd
     }
 
     dev::ThreadPool::Ptr workerPool() { return m_workerPool; }

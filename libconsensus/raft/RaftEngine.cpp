@@ -60,7 +60,7 @@ void RaftEngine::resetElectTimeout()
 // raft初始环境
 void RaftEngine::initRaftEnv()
 {
-    resetConfig(); // 节点配置
+    resetConfig();  // 节点配置
 
     {
         Guard guard(m_mutex);
@@ -75,7 +75,7 @@ void RaftEngine::initRaftEnv()
         m_increaseTime = (m_maxElectTimeout - m_minElectTimeout) / 4;
     }
 
-    resetElectTimeout(); // 重置选举超时
+    resetElectTimeout();  // 重置选举超时
     std::srand(static_cast<unsigned>(utcTime()));
 
     RAFTENGINE_LOG(INFO) << LOG_DESC("[#initRaftEnv]Raft init env success");
@@ -136,7 +136,7 @@ void RaftEngine::resetConfig()
     if (shouldSwitchToFollower)
     {
         switchToFollower(InvalidIndex);
-        resetElectTimeout(); // follower需要重置选举超时
+        resetElectTimeout();  // follower需要重置选举超时
     }
 }
 
@@ -165,7 +165,7 @@ void RaftEngine::stop()
 // todo 暂不理解
 void RaftEngine::reportBlock(dev::eth::Block const& _block)
 {
-    ConsensusEngineBase::reportBlock(_block); // 报告，打印信息
+    ConsensusEngineBase::reportBlock(_block);  // 报告，打印信息
     auto shouldReport = false;
     {
         Guard guard(m_mutex);
@@ -174,7 +174,7 @@ void RaftEngine::reportBlock(dev::eth::Block const& _block)
                         m_highestBlock.number() < _block.blockHeader().number());
         if (shouldReport)
         {
-            m_lastBlockTime = utcSteadyTime(); // 毫秒 utc，since 1970
+            m_lastBlockTime = utcSteadyTime();  // 毫秒 utc，since 1970
             // 更新最高区块头部
             m_highestBlock = m_blockChain->getBlockByNumber(m_blockChain->number())->header();
         }
@@ -184,11 +184,11 @@ void RaftEngine::reportBlock(dev::eth::Block const& _block)
     {
         {
             Guard guard(m_commitMutex);
-            
+
             auto iter = m_commitFingerPrint.find(m_uncommittedBlock.header().hash());
-            if (iter != m_commitFingerPrint.end()) 
+            if (iter != m_commitFingerPrint.end())
             {
-                m_commitFingerPrint.erase(iter); // 在提交记录中找到该区块，移除该区块
+                m_commitFingerPrint.erase(iter);  // 在提交记录中找到该区块，移除该区块
             }
 
             m_uncommittedBlock = Block();
@@ -228,7 +228,7 @@ bool RaftEngine::isValidReq(P2PMessage::Ptr _message, P2PSession::Ptr _session, 
     h512 nodeId;
     bool isSealer = getNodeIdByIndex(nodeId, nodeIdx());
     // peer的nodeID
-    if (!isSealer || _session->nodeID() == nodeId) // 第二个条件？
+    if (!isSealer || _session->nodeID() == nodeId)  // 第二个条件？
     {
         RAFTENGINE_LOG(WARNING) << LOG_DESC("[#isValidReq]I'm not a sealer");
         return false;
@@ -346,8 +346,8 @@ void RaftEngine::workLoop()
 // leader 逻辑
 void RaftEngine::tryCommitUncommitedBlock(RaftHeartBeatResp& _resp)
 {
-    std::unique_lock<std::mutex> ul(m_commitMutex); // 提交相关的锁
-    if (bool(m_uncommittedBlock)) // operator bool()
+    std::unique_lock<std::mutex> ul(m_commitMutex);  // 提交相关的锁
+    if (bool(m_uncommittedBlock))                    // operator bool()
     {
         auto uncommitedBlockHash = m_uncommittedBlock.header().hash();
         // 未提交区块高度等于共识区块高度
@@ -358,7 +358,7 @@ void RaftEngine::tryCommitUncommitedBlock(RaftHeartBeatResp& _resp)
             {
                 // Collect ack from follower
                 // ensure that the block has been transfered to most of followers
-                m_commitFingerPrint[uncommitedBlockHash].insert(_resp.idx); // 哈希集合
+                m_commitFingerPrint[uncommitedBlockHash].insert(_resp.idx);  // 哈希集合
                 if (m_commitFingerPrint[uncommitedBlockHash].size() >=
                     static_cast<uint64_t>(m_nodeNum - m_f))
                 {
@@ -376,7 +376,7 @@ void RaftEngine::tryCommitUncommitedBlock(RaftHeartBeatResp& _resp)
                         m_commitCV.notify_all();
                     }
                     else
-                    {   // 自己提交
+                    {  // 自己提交
                         RAFTENGINE_LOG(TRACE) << LOG_DESC(
                             "[#tryCommitUncommitedBlock]No thread waiting on "
                             "commitCV, commit by meself");
@@ -422,8 +422,8 @@ void RaftEngine::tryCommitUncommitedBlock(RaftHeartBeatResp& _resp)
                         << LOG_KV("myFingerprint", uncommitedBlockHash);
                 }
             }
-        } // if (m_uncommittedBlockNumber == m_consensusBlockNumber)
-        else 
+        }  // if (m_uncommittedBlockNumber == m_consensusBlockNumber)
+        else
         {
             // 高度不对应，舍弃
             RAFTENGINE_LOG(TRACE) << LOG_DESC("[#tryCommitUncommitedBlock]Give up uncommited block")
@@ -433,8 +433,8 @@ void RaftEngine::tryCommitUncommitedBlock(RaftHeartBeatResp& _resp)
             m_uncommittedBlock = Block();
             m_uncommittedBlockNumber = 0;
         }
-    } // if (bool(m_uncommittedBlock)) 
-    else 
+    }  // if (bool(m_uncommittedBlock))
+    else
     {
         RAFTENGINE_LOG(TRACE) << LOG_DESC("[#tryCommitUncommitedBlock]No uncommited block");
         ul.unlock();
@@ -575,13 +575,13 @@ bool RaftEngine::runAsLeaderImp(std::unordered_map<h512, unsigned>& memberHeartb
 
             tryCommitUncommitedBlock(resp);
             return true;
-        } // case RaftPacketType::RaftHeartBeatRespPacket:
+        }  // case RaftPacketType::RaftHeartBeatRespPacket:
         default:
         {
             return true;
         }
         }
-    } // if (m_nodeNum > 1)
+    }  // if (m_nodeNum > 1)
     else
     {
         // m_nodeNum == 1，自己提交？
@@ -593,10 +593,10 @@ bool RaftEngine::runAsLeaderImp(std::unordered_map<h512, unsigned>& memberHeartb
 
 void RaftEngine::runAsLeader()
 {
-    m_firstVote = InvalidIndex; // 重置 fristVote
-    m_lastLeaderTerm = m_term; // leader自己
+    m_firstVote = InvalidIndex;  // 重置 fristVote
+    m_lastLeaderTerm = m_term;   // leader自己
     m_lastHeartbeatReset = m_lastHeartbeatTime = std::chrono::steady_clock::now();
-    std::unordered_map<h512, unsigned> memberHeartbeatLog; // 哈希表：心跳计数
+    std::unordered_map<h512, unsigned> memberHeartbeatLog;  // 哈希表：心跳计数
 
     // 工作线程循环
     while (isWorking())
@@ -751,7 +751,7 @@ void RaftEngine::runAsCandidate()
     m_firstVote = m_idx;
 
     // 赢得选举，成为leader
-    if (wonElection(voteState.vote)) // return _votes >= m_nodeNum - m_f;
+    if (wonElection(voteState.vote))  // return _votes >= m_nodeNum - m_f;
     {
         RAFTENGINE_LOG(DEBUG) << LOG_DESC("[#runAsCandidate]Won election, switch to leader now");
         switchToLeader();
@@ -884,7 +884,7 @@ bool RaftEngine::checkHeartbeatTimeout()
 P2PMessage::Ptr RaftEngine::generateHeartbeat()
 {
     RaftHeartBeat hb;
-    hb.idx = m_idx; 
+    hb.idx = m_idx;
     hb.term = m_term;
     hb.height = m_highestBlock.number();
     hb.blockHash = m_highestBlock.hash();
@@ -934,7 +934,7 @@ void RaftEngine::broadcastHeartbeat()
     {
         m_lastHeartbeatTime = nowTime;
         // 心跳可能包含最新区块信息，封装为 p2pMsg
-        auto heartbeatMsg = generateHeartbeat(); 
+        auto heartbeatMsg = generateHeartbeat();
         broadcastMsg(heartbeatMsg);
         // 广播后可以清除投票缓存， Broadcast or receive enough hb package, clear first vote cache
         clearFirstVoteCache();
@@ -959,7 +959,7 @@ P2PMessage::Ptr RaftEngine::generateVoteReq()
     auto currentBlockNumber = m_blockChain->number();
     {
         Guard guard(m_commitMutex);
-        if (bool(m_uncommittedBlock)) // 如果有未提交区块，可以视为在未提交的日志
+        if (bool(m_uncommittedBlock))  // 如果有未提交区块，可以视为在未提交的日志
         {
             req.lastBlockNumber = currentBlockNumber + 1;
         }
@@ -1064,7 +1064,7 @@ bool RaftEngine::handleVoteRequest(u256 const& _from, h512 const& _node, RaftVot
                           << LOG_KV("candidate", _req.candidate);
 
     RaftVoteResp resp;
-    resp.idx = m_idx; // 
+    resp.idx = m_idx;  //
     resp.term = m_term;
     resp.height = m_highestBlock.number();
     resp.blockHash = m_highestBlock.hash();
@@ -1074,7 +1074,7 @@ bool RaftEngine::handleVoteRequest(u256 const& _from, h512 const& _node, RaftVot
     resp.lastLeaderTerm = m_lastLeaderTerm;
 
     // raft term 比较
-    if (_req.term <= m_term) // 拒绝投票，分为leader和follower
+    if (_req.term <= m_term)  // 拒绝投票，分为leader和follower
     {
         if (m_state == EN_STATE_LEADER)
         {
@@ -1154,7 +1154,7 @@ bool RaftEngine::handleVoteRequest(u256 const& _from, h512 const& _node, RaftVot
         RAFTENGINE_LOG(DEBUG) << LOG_DESC(
             "[#handleVoteRequest]Discard vreq for I'm the first time to vote");
 
-        m_firstVote = _req.candidate; // 第一次投票标记
+        m_firstVote = _req.candidate;  // 第一次投票标记
         resp.voteFlag = VOTE_RESP_FIRST_VOTE;
         // 投票，但不改变 term（第一次拒绝投票）
         sendResponse(_from, _node, RaftVoteRespPacket, resp);
@@ -1163,7 +1163,7 @@ bool RaftEngine::handleVoteRequest(u256 const& _from, h512 const& _node, RaftVot
 
     RAFTENGINE_LOG(DEBUG) << LOG_DESC("[#handleVoteRequest]Grant vreq");
 
-    m_term = _req.term; // 更新 m_term 
+    m_term = _req.term;  // 更新 m_term
     m_leader = InvalidIndex;
     m_vote = InvalidIndex;
 
@@ -1171,7 +1171,7 @@ bool RaftEngine::handleVoteRequest(u256 const& _from, h512 const& _node, RaftVot
     m_firstVote = _req.candidate;
     setVote(_req.candidate);
 
-    resp.term = m_term; // resp.term = m_term = _req.term;
+    resp.term = m_term;  // resp.term = m_term = _req.term;
     resp.voteFlag = VOTE_RESP_GRANTED;
     sendResponse(_from, _node, RaftVoteRespPacket, resp);
 
@@ -1382,7 +1382,7 @@ bool RaftEngine::sendResponse(
 HandleVoteResult RaftEngine::handleVoteResponse(
     u256 const& _from, h512 const& _node, RaftVoteResp const& _resp, VoteState& _vote_state)
 {
-    if (_resp.term < m_term - 1) // 通常返回来的应该 _resp.term == m_term
+    if (_resp.term < m_term - 1)  // 通常返回来的应该 _resp.term == m_term
     {
         RAFTENGINE_LOG(DEBUG) << LOG_DESC("[#handleVoteResponse]Peer's term is smaller than mine")
                               << LOG_KV("respTerm", _resp.term) << LOG_KV("myTerm", m_term);
@@ -1398,7 +1398,7 @@ HandleVoteResult RaftEngine::handleVoteResponse(
         {
             /// increase elect time
             increaseElectTime();
-            return TO_FOLLOWER; // 如果有大量拒绝投票，则回退为follower
+            return TO_FOLLOWER;  // 如果有大量拒绝投票，则回退为follower
         }
         break;
     }
@@ -1445,7 +1445,7 @@ HandleVoteResult RaftEngine::handleVoteResponse(
     }
     case VoteRespFlag::VOTE_RESP_OUTDATED:
     {
-        _vote_state.outdated++; // 落后了不做任何事？
+        _vote_state.outdated++;  // 落后了不做任何事？
         // do nothing
         break;
     }
@@ -1552,7 +1552,7 @@ bool RaftEngine::shouldSeal()
 // leader 提交区块
 bool RaftEngine::commit(Block const& _block)
 {
-    std::unique_lock<std::mutex> ul(m_commitMutex); // 提交过程互斥
+    std::unique_lock<std::mutex> ul(m_commitMutex);  // 提交过程互斥
     m_uncommittedBlock = _block;
     m_uncommittedBlockNumber = m_consensusBlockNumber;
     m_waitingForCommitting = true;
@@ -1675,7 +1675,8 @@ bool RaftEngine::reachBlockIntervalTime()
     auto nowTime = utcSteadyTime();
     auto parentTime = m_lastBlockTime;
 
-    return nowTime - parentTime >= g_BCOSConfig.c_intervalBlockTime;
+    // return nowTime - parentTime >= g_BCOSConfig.c_intervalBlockTime;
+    return nowTime - parentTime >= 200;
 }
 
 const std::string RaftEngine::consensusStatus()
