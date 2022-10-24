@@ -72,7 +72,7 @@ void RaftSealer::start()
                 continue;
             }
             auto tx = fakeTransaction();
-            auto res = txPool->submit(tx);
+            auto res = txPool->submitTransactions(tx);
             if (aTxCnt % 5000)
                 continue;
             LOG(INFO) << LOG_DESC("zd") << LOG_KV("id", id) << LOG_KV("aTxCnt", aTxCnt)
@@ -83,8 +83,9 @@ void RaftSealer::start()
         }
     };
     std::thread{txBoost, 0}.detach();
-    // std::thread{txBoost, 1}.detach();
-    // std::thread{txBoost, 2}.detach();
+    std::thread{txBoost, 1}.detach();
+    std::thread{txBoost, 2}.detach();
+
 
     m_raftEngine->start();
     Sealer::start();
