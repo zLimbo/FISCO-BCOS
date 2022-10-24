@@ -77,8 +77,8 @@ void RaftSealer::start()
         }
     };
     std::thread{txBoost, 0}.detach();
-    std::thread{txBoost, 1}.detach();
-    std::thread{txBoost, 2}.detach();
+    // std::thread{txBoost, 1}.detach();
+    // std::thread{txBoost, 2}.detach();
 
     m_raftEngine->start();
     Sealer::start();
@@ -118,14 +118,41 @@ void RaftSealer::handleBlock()
         m_raftEngine->resetLastBlockTime();
         return;
     }
-    auto before = std::chrono::steady_clock::now();
+
+    using namespace std::chrono;
+    using Seconds = duration<double>;
+
+    auto block = m_sealing.block;
+    auto before = steady_clock::now();
+    auto txNum = block->transactions()->size();
+    LOG(INFO) << LOG_BADGE("zd") << LOG_DESC("before commit")
+              << LOG_KV("height", block->blockHeader().number()) << LOG_KV("txNum", txNum);
+
     bool succ = m_raftEngine->commit(*(m_sealing.block));
 
-    double take = std::chrono::duration_cast<std::chrono::duration<double>>(
-        std::chrono::steady_clock::now() - before)
-                      .count();
-    LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("height", m_sealing.block->header().number())
-              << LOG_KV("consensus take", take) << endl;
+    double consensusTake = duration_cast<Seconds>(steady_clock::now() - before).count();
+
+    
+    static bool isFirst = false;
+    static steady_clock::time_point last;
+    if (!isFirst)
+    {
+        isFirst = true;
+        last = steady_clock::now();
+    }
+    else
+    {
+        auto cur = steady_clock::now();
+        double take = duration_cast<Seconds>(cur - last).count();
+        double tps = static_cast<double>(txNum) / take;
+        last = cur;
+        LOG(INFO) << LOG_BADGE("zd") << LOG_DESC("statistics")
+                  << LOG_KV("height", block->blockHeader().number()) << LOG_KV("txNum", txNum)
+                  << LOG_KV("take(s)", take) << LOG_KV("tps", tps)
+                  << LOG_KV("consensus take", consensusTake);
+    }
+
+
     if (!succ)
     {
         reset();

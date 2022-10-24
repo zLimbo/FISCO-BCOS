@@ -66,31 +66,6 @@ ExecutiveContext::Ptr BlockVerifier::executeBlock(Block& block, BlockInfo const&
         // {
         //     context = serialExecuteBlock(block, parentBlockInfo);
         // }
-
-        {
-            using namespace std::chrono;
-            using Seconds = duration<double>;
-
-            static bool isFirst = false;
-            static steady_clock::time_point last;
-            if (!isFirst)
-            {
-                isFirst = true;
-                last = steady_clock::now();
-            }
-            else
-            {
-                auto txNum = block.transactions()->size();
-                auto cur = steady_clock::now();
-                double take = duration_cast<Seconds>(cur - last).count();
-                double tps = static_cast<double>(txNum) / take;
-                last = cur;
-                LOG(INFO) << LOG_BADGE("[zd]") << LOG_DESC("statistics")
-                           << LOG_KV("height", block.blockHeader().number())
-                           << LOG_KV("txNum", txNum) << LOG_KV("take(s)", take)
-                           << LOG_KV("tps", tps);
-            }
-        }
     }
     catch (exception& e)
     {
