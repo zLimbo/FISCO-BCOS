@@ -108,7 +108,8 @@ void RaftSealer::handleBlock()
     RAFTSEALER_LOG(INFO) << LOG_DESC("[handleBlock]++++++++++++++++ Generating seal")
                          << LOG_KV("blockNumber", m_sealing.block->header().number())
                          << LOG_KV("txNum", m_sealing.block->getTransactionSize())
-                         << LOG_KV("hash", m_sealing.block->header().hash().abridged());
+                         << LOG_KV("hash", m_sealing.block->header().hash().abridged())
+                         << LOG_KV("now", utcTime());
 
     if (m_sealing.block->getTransactionSize() == 0)
     {
@@ -119,6 +120,7 @@ void RaftSealer::handleBlock()
     }
     auto before = std::chrono::steady_clock::now();
     bool succ = m_raftEngine->commit(*(m_sealing.block));
+
     double take = std::chrono::duration_cast<std::chrono::duration<double>>(
         std::chrono::steady_clock::now() - before)
                       .count();
