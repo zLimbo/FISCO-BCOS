@@ -54,7 +54,7 @@ Transaction::Ptr fakeTransaction(size_t _idx = 0)
 void RaftSealer::start()
 {
     auto txPool = static_pointer_cast<txpool::TxPool>(m_txPool);
-    auto txBoost = [txPool]() {
+    auto txBoost = [txPool](int id) {
         std::this_thread::sleep_for(std::chrono::seconds{3});
         int i = 0;
         while (true)
@@ -69,13 +69,16 @@ void RaftSealer::start()
             ++i;
             if (i % 1000)
                 continue;
-            LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("index", i) << LOG_KV("hash", res.first)
-                      << LOG_KV("addr", res.second) << LOG_KV("cap", tx->capacity())
+            LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("id", id) << LOG_KV("index", i)
+                      << LOG_KV("hash", res.first) << LOG_KV("addr", res.second)
+                      << LOG_KV("cap", tx->capacity())
                       << LOG_KV("pendingSize", txPool->pendingSize())
                       << LOG_KV("", txPool->maxBlockLimit());
         }
     };
-    std::thread{txBoost}.detach();
+    std::thread{txBoost, 0}.detach();
+    std::thread{txBoost, 1}.detach();
+    std::thread{txBoost, 2}.detach();
 
     m_raftEngine->start();
     Sealer::start();
