@@ -22,6 +22,7 @@
  * @date: 2018-12-05
  */
 #include "RaftSealer.h"
+#include "libtxpool/TxPool.h"
 #include <chrono>
 #include <thread>
 
@@ -53,20 +54,24 @@ Transaction::Ptr fakeTransaction(size_t _idx = 0)
 
 void RaftSealer::start()
 {
-    auto txBoost = [this]() {
+    auto txPool = static_pointer_cast<txpool::TxPool>(m_txPool);
+    auto txBoost = [txPool]() {
         std::this_thread::sleep_for(std::chrono::seconds{3});
         int i = 0;
         while (true)
         {
-            if (m_txPool->isFull())
+            if (txPool->isFull())
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds{20});
                 continue;
             }
             auto tx = fakeTransaction(i);
-            auto res = m_txPool->submit(tx);
+            auto res = txPool->submit(tx);
+            if (i % 1000) continue;
             LOG(INFO) << LOG_DESC("[zd]") << LOG_KV("index", i) << LOG_KV("hash", res.first)
-                      << LOG_KV("addr", res.second);
+                      << LOG_KV("addr", res.second) << LOG_KV("pendingSize", txPool->pendingSize())
+                      << LOG_KV("", txPool->maxBlockLimit());
+
         }
     };
     std::thread{txBoost}.detach();
