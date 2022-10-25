@@ -286,7 +286,9 @@ bool TxPool::submitTxWithoutCheck(dev::eth::Transaction::Ptr _tx)
         WriteGuard txsLock(x_txsHashFilter);
         m_txsHashFilter->insert(_tx->hash());
     }
-    m_onReady();
+    static uint64_t txcnt = 0;
+    if (++txcnt % 5000 == 0)
+        m_onReady();
     return ok;
 }
 
