@@ -249,6 +249,38 @@ ImportResult TxPool::import(Transaction::Ptr _tx, IfDropped)
     return verify_ret;
 }
 
+// zd
+bool TxPool::submitTxWithoutCheck(dev::eth::Transaction::Ptr _tx)
+{
+    bool ok = false;
+    _tx->setImportTime(u256(getAlignedTime()));
+    auto memoryUsed = m_usedMemorySize + _tx->capacity();
+    if (memoryUsed > m_maxMemoryLimit)
+    {
+        return false;
+    }
+    if (m_txsQueue.size() >= m_limit)
+    {
+        return false;
+    }
+    UpgradableGuard l(m_lock);
+    {
+        UpgradeGuard ul(l);
+        ok = insert(_tx);
+        if (ok)
+        {
+            m_txpoolNonceChecker->insertCache(*_tx);
+            // only if the transaction import is successful, update m_usedMemorySize
+            m_usedMemorySize += _tx->capacity();
+        }
+    }
+    {
+        WriteGuard txsLock(x_txsHashFilter);
+        m_txsHashFilter->insert(_tx->hash());
+    }
+    return ok;
+}
+
 void TxPool::verifyAndSetSenderForBlock(dev::eth::Block& block)
 {
     auto trans_num = block.getTransactionSize();

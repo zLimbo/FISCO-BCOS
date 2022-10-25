@@ -140,6 +140,8 @@ public:
 
     std::pair<h256, Address> submitTransactions(dev::eth::Transaction::Ptr _tx) override;
 
+    bool submitTxWithoutCheck(dev::eth::Transaction::Ptr _tx);
+
     /**
      * @brief Remove transaction from the queue
      * @param _txHash: Remove bad transaction from the queue

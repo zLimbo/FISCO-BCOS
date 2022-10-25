@@ -71,12 +71,13 @@ void RaftSealer::start()
                 continue;
             }
             auto tx = fakeTransaction();
-            auto res = txPool->submitTransactions(tx);
+            // auto res = txPool->submitTransactions(tx);
+            auto res = txPool->submitTxWithoutCheck(tx);
+
             if (aTxCnt % 5000)
                 continue;
             LOG(INFO) << LOG_DESC("zd") << LOG_KV("id", id) << LOG_KV("aTxCnt", aTxCnt)
-                      << LOG_KV("hash", res.first) << LOG_KV("addr", res.second)
-                      << LOG_KV("cap", tx->capacity())
+                      << LOG_KV("ok", res) << LOG_KV("cap", tx->capacity())
                       << LOG_KV("pendingSize", txPool->pendingSize())
                       << LOG_KV("maxBlockLimit", txPool->maxBlockLimit());
         }
