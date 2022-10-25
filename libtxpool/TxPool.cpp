@@ -284,7 +284,7 @@ bool TxPool::submitTxWithoutCheck(dev::eth::Transaction::Ptr _tx)
     //     WriteGuard txsLock(x_txsHashFilter);
     //     m_txsHashFilter->insert(_tx->hash());
     // }
-    WriteGuard l(m_lock);
+    // WriteGuard l(m_lock);
     h256 tx_hash = _tx->hash();
     TransactionQueue::iterator p_tx = m_txsQueue.emplace(_tx).first;
     m_txsHash[tx_hash] = p_tx;
