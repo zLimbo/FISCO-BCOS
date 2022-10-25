@@ -287,7 +287,7 @@ bool TxPool::submitTxWithoutCheck(dev::eth::Transaction::Ptr _tx)
         m_txsHashFilter->insert(_tx->hash());
     }
     static uint64_t txcnt = 0;
-    if (++txcnt % 5000 == 0)
+    if (++txcnt % 100 == 0)
         m_onReady();
     return ok;
 }
