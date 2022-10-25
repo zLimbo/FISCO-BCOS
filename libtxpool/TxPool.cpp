@@ -266,7 +266,9 @@ bool TxPool::submitTxWithoutCheck(dev::eth::Transaction::Ptr _tx)
     }
     _tx->hash();
     _tx->sender();
-    if (!m_txNonceCheck->isNonceOk(*_tx, true))
+    // toAddress(_tx->from(), _tx->nonce());
+
+    if (!m_txNonceCheck->isNonceOk(*_tx, false) || !m_txpoolNonceChecker->isNonceOk(*_tx, true))
     {
         return false;
     }
