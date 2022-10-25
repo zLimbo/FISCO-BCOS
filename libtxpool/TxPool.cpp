@@ -252,7 +252,7 @@ ImportResult TxPool::import(Transaction::Ptr _tx, IfDropped)
 // zd
 bool TxPool::submitTxWithoutCheck(dev::eth::Transaction::Ptr _tx)
 {
-    bool ok = false;
+    // bool ok = false;
     // _tx->setImportTime(u256(getAlignedTime()));
     // auto memoryUsed = m_usedMemorySize + _tx->capacity();
     // if (memoryUsed > m_maxMemoryLimit)
@@ -284,9 +284,12 @@ bool TxPool::submitTxWithoutCheck(dev::eth::Transaction::Ptr _tx)
     //     WriteGuard txsLock(x_txsHashFilter);
     //     m_txsHashFilter->insert(_tx->hash());
     // }
-    ok = insert(_tx);
+    WriteGuard l(m_lock);
+    h256 tx_hash = _tx->hash();
+    TransactionQueue::iterator p_tx = m_txsQueue.emplace(_tx).first;
+    m_txsHash[tx_hash] = p_tx;
     m_onReady();
-    return ok;
+    return true;
 }
 
 void TxPool::verifyAndSetSenderForBlock(dev::eth::Block& block)
