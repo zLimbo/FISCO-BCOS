@@ -259,11 +259,16 @@ bool TxPool::submitTxWithoutCheck(dev::eth::Transaction::Ptr _tx)
     {
         return false;
     }
+    UpgradableGuard l(m_lock);
     if (m_txsQueue.size() >= m_limit)
     {
         return false;
     }
-    UpgradableGuard l(m_lock);
+    _tx->hash();
+    _tx->sender();
+    if (!m_txNonceCheck->isNonceOk(*_tx, true)) {
+        return false;
+    }
     {
         UpgradeGuard ul(l);
         ok = insert(_tx);
