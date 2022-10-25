@@ -253,42 +253,39 @@ ImportResult TxPool::import(Transaction::Ptr _tx, IfDropped)
 bool TxPool::submitTxWithoutCheck(dev::eth::Transaction::Ptr _tx)
 {
     bool ok = false;
-    _tx->setImportTime(u256(getAlignedTime()));
-    auto memoryUsed = m_usedMemorySize + _tx->capacity();
-    if (memoryUsed > m_maxMemoryLimit)
-    {
-        return false;
-    }
-    UpgradableGuard l(m_lock);
-    if (m_txsQueue.size() >= m_limit)
-    {
-        return false;
-    }
-    _tx->hash();
-    _tx->sender();
-    // toAddress(_tx->from(), _tx->nonce());
+    // _tx->setImportTime(u256(getAlignedTime()));
+    // auto memoryUsed = m_usedMemorySize + _tx->capacity();
+    // if (memoryUsed > m_maxMemoryLimit)
+    // {
+    //     return false;
+    // }
+    // UpgradableGuard l(m_lock);
+    // if (m_txsQueue.size() >= m_limit)
+    // {
+    //     return false;
+    // }
+    // // toAddress(_tx->from(), _tx->nonce());
 
-    if (!m_txNonceCheck->isNonceOk(*_tx, false) || !m_txpoolNonceChecker->isNonceOk(*_tx, true))
-    {
-        return false;
-    }
-    {
-        UpgradeGuard ul(l);
-        ok = insert(_tx);
-        if (ok)
-        {
-            m_txpoolNonceChecker->insertCache(*_tx);
-            // only if the transaction import is successful, update m_usedMemorySize
-            m_usedMemorySize += _tx->capacity();
-        }
-    }
-    {
-        WriteGuard txsLock(x_txsHashFilter);
-        m_txsHashFilter->insert(_tx->hash());
-    }
-    static uint64_t txcnt = 0;
-    if (++txcnt % 100 == 0)
-        m_onReady();
+    // if (!m_txNonceCheck->isNonceOk(*_tx, false) || !m_txpoolNonceChecker->isNonceOk(*_tx, true))
+    // {
+    //     return false;
+    // }
+    // {
+    //     UpgradeGuard ul(l);
+    //     ok = insert(_tx);
+    //     if (ok)
+    //     {
+    //         m_txpoolNonceChecker->insertCache(*_tx);
+    //         // only if the transaction import is successful, update m_usedMemorySize
+    //         m_usedMemorySize += _tx->capacity();
+    //     }
+    // }
+    // {
+    //     WriteGuard txsLock(x_txsHashFilter);
+    //     m_txsHashFilter->insert(_tx->hash());
+    // }
+    ok = insert(_tx);
+    m_onReady();
     return ok;
 }
 
