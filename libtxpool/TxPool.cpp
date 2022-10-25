@@ -266,7 +266,8 @@ bool TxPool::submitTxWithoutCheck(dev::eth::Transaction::Ptr _tx)
     }
     _tx->hash();
     _tx->sender();
-    if (!m_txNonceCheck->isNonceOk(*_tx, true)) {
+    if (!m_txNonceCheck->isNonceOk(*_tx, true))
+    {
         return false;
     }
     {
@@ -633,6 +634,7 @@ std::shared_ptr<Transactions> TxPool::topTransactions(
             auto tx = *it;
             if (m_invalidTxs->count(tx->hash()))
             {
+                LOG(INFO) << LOG_DESC("zd topTx invalidTxs");
                 continue;
             }
             /// check nonce again when obtain transactions
@@ -645,6 +647,7 @@ std::shared_ptr<Transactions> TxPool::topTransactions(
                                          "Duplicated nonce: transaction maybe already-committed")
                                   << LOG_KV("nonce", tx->nonce())
                                   << LOG_KV("hash", tx->hash().abridged());
+                LOG(INFO) << LOG_DESC("zd topTx not isNonceOk");
                 continue;
             }
             // check block limit(only insert txs with invalid blockLimit into m_invalidTxs)
@@ -655,6 +658,7 @@ std::shared_ptr<Transactions> TxPool::topTransactions(
                     << LOG_DESC("Invalid blocklimit") << LOG_KV("hash", tx->hash().abridged())
                     << LOG_KV("blockLimit", tx->blockLimit())
                     << LOG_KV("blockNumber", m_blockChain->number());
+                LOG(INFO) << LOG_DESC("zd topTx not isBlockLimitOk");
                 continue;
             }
             // check txs expiration
@@ -665,6 +669,7 @@ std::shared_ptr<Transactions> TxPool::topTransactions(
                     << LOG_DESC("Expired tx") << LOG_KV("hash", tx->hash().abridged())
                     << LOG_KV("currentTime", currentTime)
                     << LOG_KV("txImportTime", tx->importTime());
+                    LOG(INFO) << LOG_DESC("zd topTx txsExpirationTime");
                 continue;
             }
             if (!_avoid.count((*it)->hash()))
@@ -673,6 +678,8 @@ std::shared_ptr<Transactions> TxPool::topTransactions(
                 txCnt++;
                 if (_updateAvoid)  // 更新避免
                     _avoid.insert((*it)->hash());
+            } else {
+                LOG(INFO) << LOG_DESC("zd topTx avoid.count");
             }
         }
     }
