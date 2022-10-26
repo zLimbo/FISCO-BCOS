@@ -152,11 +152,11 @@ void Sealer::doWork(bool wait)
             // /// load transaction from transaction queue
             // if (maxTxsPerBlock > tx_num && m_syncTxPool == true && !reachBlockIntervalTime())
             // {
-            //     using namespace std::chrono;
-            //     using Seconds = duration<double>;
-            //     auto before = steady_clock::now();
-            //     loadTransactions(maxTxsPerBlock - tx_num);  // 尝试填满区块交易
-            //     auto take = duration_cast<Seconds>(steady_clock::now() - before).count();
+            // using namespace std::chrono;
+            // using Seconds = duration<double>;
+            // auto before = steady_clock::now();
+            // loadTransactions(maxTxsPerBlock - tx_num);  // 尝试填满区块交易
+            // auto take = duration_cast<Seconds>(steady_clock::now() - before).count();
             //     LOG(INFO) << LOG_DESC("zd") << LOG_KV("maxTxsPerBlock", maxTxsPerBlock)
             //               << LOG_KV("blockNumber", m_sealing.block->header().number())
             //               << LOG_KV("txNum", m_sealing.block->getTransactionSize())
@@ -174,15 +174,24 @@ void Sealer::doWork(bool wait)
 
             uint64_t tx_num = m_sealing.block->getTransactionSize();
             auto txarr = std::make_shared<Transactions>();
+
+            using namespace std::chrono;
+            using Seconds = duration<double>;
+            auto before = steady_clock::now();
             for (int i = tx_num; i < 10000; ++i)
             {
                 txarr->push_back(fakeTransaction2());
             }
+            double take1 = duration_cast<Seconds>(steady_clock::now() - before).count();
+            before = steady_clock::now();
             m_sealing.block->appendTransactions(txarr);
+            double take2 = duration_cast<Seconds>(steady_clock::now() - before).count();
+
             LOG(INFO) << LOG_DESC("zd seal block")
                       << LOG_KV("height", m_sealing.block->header().number())
                       << LOG_KV("txNum", m_sealing.block->getTransactionSize())
-                      << LOG_KV("aTxCnt", aTxCnt);
+                      << LOG_KV("aTxCnt", aTxCnt) << LOG_KV("take1", take1)
+                      << LOG_KV("take2", take2) << LOG_KV("take", take1 + take2);
 
             if (shouldHandleBlock())
                 handleBlock();
