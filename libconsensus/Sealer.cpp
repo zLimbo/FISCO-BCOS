@@ -153,7 +153,7 @@ struct ZFakeTxs
     {
         while (true)
         {
-            if (txsQueueSize() >= threadNum_)
+            if (txsQueueSize() >= threadNum_ * 2)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds{200});
                 continue;
@@ -231,7 +231,7 @@ void Sealer::doWork(bool wait)
             //     return;
             // }
 
-            static ZFakeTxs zFakeTxs{10};  // 十个线程生产交易队列
+            static ZFakeTxs zFakeTxs{4};  // 线程池生产交易队列
 
             using namespace std::chrono;
             using Seconds = duration<double>;
