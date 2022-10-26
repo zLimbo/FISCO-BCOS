@@ -1580,7 +1580,8 @@ bool RaftEngine::commit(Block const& _block)
     }
 
     RAFTENGINE_LOG(DEBUG) << LOG_DESC("[#commit]Start to commit block");
-    return checkAndExecute(_block);
+    return true;
+    // return checkAndExecute(_block);
 }
 
 bool RaftEngine::checkAndExecute(Block const& _block)
@@ -1676,7 +1677,7 @@ bool RaftEngine::reachBlockIntervalTime()
     auto parentTime = m_lastBlockTime;
 
     // return nowTime - parentTime >= g_BCOSConfig.c_intervalBlockTime;
-    return nowTime - parentTime >= 100;
+    return nowTime - parentTime >= 1;
 }
 
 const std::string RaftEngine::consensusStatus()

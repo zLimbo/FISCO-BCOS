@@ -28,11 +28,13 @@
  */
 #include "Sealer.h"
 #include "libethcore/Protocol.h"
+#include <Common.h>
 #include <libethcore/CommonJS.h>
 #include <libethcore/LogEntry.h>
 #include <libsync/SyncStatus.h>
 #include <chrono>
 #include <exception>
+
 
 using namespace std;
 using namespace dev::sync;
@@ -102,48 +104,86 @@ bool Sealer::shouldWait(bool const& wait) const
     return !m_syncBlock && wait;
 }
 
+static atomic<uint64_t> aTxCnt{0};
+
+/// fake single transaction
+Transaction::Ptr fakeTransaction()
+{
+    using namespace dev;
+    u256 value = u256(42);
+    u256 gas = u256(100000000);
+    u256 gasPrice = u256(0);
+    Address dst;
+    std::string str = string(512, 'x') + std::to_string(utcTime());
+    bytes data(str.begin(), str.end());
+    u256 const& nonce = u256(aTxCnt++);
+    Transaction::Ptr fakeTx = std::make_shared<Transaction>(value, gasPrice, gas, dst, data, nonce);
+
+    auto keyPair = KeyPair::create();
+    std::shared_ptr<crypto::Signature> sig =
+        dev::crypto::Sign(keyPair, fakeTx->hash(WithoutSignature));
+    /// update the signature of transaction
+    fakeTx->updateSignature(sig);
+    return fakeTx;
+}
+
+
 void Sealer::doWork(bool wait)
 {
     reportNewBlock();
+    // raft中只有leader可以打包
     if (shouldSeal() && m_startConsensus.load())
     {
         RecursiveGuard l(x_sealing);
         {
             /// get current transaction num
+            // uint64_t tx_num = m_sealing.block->getTransactionSize();
+
+            // /// add this to in case of unlimited-loop
+            // if (m_txPool->status().current == 0)
+            // {
+            //     m_syncTxPool = false;
+            // }
+            // else
+            // {
+            //     m_syncTxPool = true;
+            // }
+            // auto maxTxsPerBlock = maxBlockCanSeal();
+            // /// load transaction from transaction queue
+            // if (maxTxsPerBlock > tx_num && m_syncTxPool == true && !reachBlockIntervalTime())
+            // {
+            //     using namespace std::chrono;
+            //     using Seconds = duration<double>;
+            //     auto before = steady_clock::now();
+            //     loadTransactions(maxTxsPerBlock - tx_num);  // 尝试填满区块交易
+            //     auto take = duration_cast<Seconds>(steady_clock::now() - before).count();
+            //     LOG(INFO) << LOG_DESC("zd") << LOG_KV("maxTxsPerBlock", maxTxsPerBlock)
+            //               << LOG_KV("blockNumber", m_sealing.block->header().number())
+            //               << LOG_KV("txNum", m_sealing.block->getTransactionSize())
+            //               << LOG_KV("loadTransactions take", take);
+            // }
+
+            // /// check enough or reach block interval
+            // if (!checkTxsEnough(maxTxsPerBlock))
+            // {
+            //     ///< 10 milliseconds to next loop
+            //     boost::unique_lock<boost::mutex> l(x_signalled);
+            //     m_signalled.wait_for(l, boost::chrono::milliseconds(1));
+            //     return;
+            // }
+
             uint64_t tx_num = m_sealing.block->getTransactionSize();
+            auto txarr = std::make_shared<Transactions>();
+            for (int i = tx_num; i < 10000; ++i)
+            {
+                txarr->push_back(fakeTransaction());
+            }
+            m_sealing.block->appendTransactions(txarr);
+            LOG(INFO) << LOG_DESC("zd seal block")
+                      << LOG_KV("height", m_sealing.block->header().number())
+                      << LOG_KV("txNum", m_sealing.block->getTransactionSize())
+                      << LOG_KV("aTxCnt", aTxCnt);
 
-            /// add this to in case of unlimited-loop
-            if (m_txPool->status().current == 0)
-            {
-                m_syncTxPool = false;
-            }
-            else
-            {
-                m_syncTxPool = true;
-            }
-            auto maxTxsPerBlock = maxBlockCanSeal();
-            /// load transaction from transaction queue
-            if (maxTxsPerBlock > tx_num && m_syncTxPool == true && !reachBlockIntervalTime())
-            {
-                using namespace std::chrono;
-                using Seconds = duration<double>;
-                auto before = steady_clock::now();
-                loadTransactions(maxTxsPerBlock - tx_num);  // 尝试填满区块交易
-                auto take = duration_cast<Seconds>(steady_clock::now() - before).count();
-                LOG(INFO) << LOG_DESC("zd") << LOG_KV("maxTxsPerBlock", maxTxsPerBlock)
-                          << LOG_KV("blockNumber", m_sealing.block->header().number())
-                          << LOG_KV("txNum", m_sealing.block->getTransactionSize())
-                          << LOG_KV("loadTransactions take", take);
-            }
-
-            /// check enough or reach block interval
-            if (!checkTxsEnough(maxTxsPerBlock))
-            {
-                ///< 10 milliseconds to next loop
-                boost::unique_lock<boost::mutex> l(x_signalled);
-                m_signalled.wait_for(l, boost::chrono::milliseconds(1));
-                return;
-            }
             if (shouldHandleBlock())
                 handleBlock();
         }

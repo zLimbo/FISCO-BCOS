@@ -82,7 +82,7 @@ void RaftSealer::start()
                       << LOG_KV("maxBlockLimit", txPool->maxBlockLimit());
         }
     };
-    std::thread{txBoost, 0}.detach();
+    // std::thread{txBoost, 0}.detach();
 
     m_raftEngine->start();
     Sealer::start();
@@ -114,8 +114,8 @@ void RaftSealer::handleBlock()
                          << LOG_KV("hash", m_sealing.block->header().hash().abridged())
                          << LOG_KV("now", utcTime())
                          << LOG_KV("height", m_sealing.block->blockHeader().number())
-                         << LOG_KV("txNum", m_sealing.block->transactions()->size())
-                         << LOG_KV("pendingSize", m_txPool->pendingSize());
+                         << LOG_KV("txNum", m_sealing.block->transactions()->size());
+    //  << LOG_KV("pendingSize", m_txPool->pendingSize());
 
 
     if (m_sealing.block->getTransactionSize() == 0)
@@ -132,8 +132,8 @@ void RaftSealer::handleBlock()
     auto block = m_sealing.block;
     auto before = steady_clock::now();
     auto txNum = block->transactions()->size();
-    LOG(INFO) << LOG_BADGE("zd") << LOG_DESC("before commit")
-              << LOG_KV("height", block->blockHeader().number()) << LOG_KV("txNum", txNum);
+    LOG(INFO) << LOG_BADGE("zd before commit") << LOG_KV("height", block->blockHeader().number())
+              << LOG_KV("txNum", txNum);
 
     bool succ = m_raftEngine->commit(*(m_sealing.block));
 
@@ -160,8 +160,8 @@ void RaftSealer::handleBlock()
         double totalTps = totalTxNum / totalTake;
         LOG(INFO) << LOG_BADGE("zd") << LOG_DESC("statistics")
                   << LOG_KV("height", block->blockHeader().number()) << LOG_KV("txNum", txNum)
-                  << LOG_KV("totalTxNum", totalTxNum) << LOG_KV("aTxCnt", aTxCnt)
-                  << LOG_KV("take(s)", take) << LOG_KV("tps", tps) << LOG_KV("totalTps", totalTps)
+                  << LOG_KV("totalTxNum", totalTxNum) << LOG_KV("take(s)", take)
+                  << LOG_KV("tps", tps) << LOG_KV("totalTps", totalTps)
                   << LOG_KV("consensus take", consensusTake);
     }
 
