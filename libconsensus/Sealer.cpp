@@ -107,7 +107,7 @@ bool Sealer::shouldWait(bool const& wait) const
 static atomic<uint64_t> aTxCnt{0};
 
 /// fake single transaction
-Transaction::Ptr fakeTransaction()
+Transaction::Ptr fakeTransaction2()
 {
     using namespace dev;
     u256 value = u256(42);
@@ -176,7 +176,7 @@ void Sealer::doWork(bool wait)
             auto txarr = std::make_shared<Transactions>();
             for (int i = tx_num; i < 10000; ++i)
             {
-                txarr->push_back(fakeTransaction());
+                txarr->push_back(fakeTransaction2());
             }
             m_sealing.block->appendTransactions(txarr);
             LOG(INFO) << LOG_DESC("zd seal block")
