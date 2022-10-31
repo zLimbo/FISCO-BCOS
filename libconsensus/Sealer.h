@@ -28,6 +28,8 @@
  */
 #pragma once
 #include "ConsensusEngineBase.h"
+
+
 #include <libblockchain/BlockChainInterface.h>
 #include <libdevcore/Worker.h>
 #include <libethcore/Block.h>

@@ -281,10 +281,13 @@ protected:
         /// update m_maxBlockTransactions stored in sealer when reporting a new block
         std::string ret = m_blockChain->getSystemConfigByKey("tx_count_limit");
         {
-            m_maxBlockTransactions = boost::lexical_cast<uint64_t>(ret);
+            // m_maxBlockTransactions = boost::lexical_cast<uint64_t>(ret);
+            m_maxBlockTransactions = 20000; // zd 
         }
-        ENGINE_LOG(DEBUG) << LOG_DESC("resetConfig: updateMaxBlockTransactions")
-                          << LOG_KV("txCountLimit", m_maxBlockTransactions);
+        // ENGINE_LOG(DEBUG) << LOG_DESC("resetConfig: updateMaxBlockTransactions")
+        //                   << LOG_KV("txCountLimit", m_maxBlockTransactions);
+        ENGINE_LOG(INFO) << LOG_DESC("resetConfig: updateMaxBlockTransactions")
+                        << LOG_KV("txCountLimit", m_maxBlockTransactions);
     }
 
     dev::h512s consensusList() const override
@@ -294,7 +297,7 @@ protected:
     }
 
 protected:
-    std::atomic<uint64_t> m_maxBlockTransactions = {1000};
+    std::atomic<uint64_t> m_maxBlockTransactions = {20000}; // zd 1000 -> 20000
     // record the sealer list has been updated or not
     std::atomic_bool m_sealerListUpdated = {true};
     int64_t m_lastSealerListUpdateNumber = 0;

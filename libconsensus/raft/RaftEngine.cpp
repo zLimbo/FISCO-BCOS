@@ -292,6 +292,12 @@ void RaftEngine::workLoop()
             continue;
         }
 
+        LOG(INFO) << LOG_DESC("zd node status") 
+            << LOG_KV("term", m_term)
+            << LOG_KV("| height", m_blockChain->number())
+                << LOG_KV("| me", m_idx) 
+                << LOG_KV("| leader", m_leader);
+
         switch (getState())
         {
         case RaftRole::EN_STATE_LEADER:
@@ -1097,7 +1103,8 @@ bool RaftEngine::handleVoteRequest(u256 const& _from, h512 const& _node, RaftVot
 bool RaftEngine::checkElectTimeout()
 {
     std::chrono::steady_clock::time_point nowTime = std::chrono::steady_clock::now();
-    return nowTime - m_lastElectTime >= std::chrono::milliseconds(m_electTimeout);
+    // return nowTime - m_lastElectTime >= std::chrono::milliseconds(m_electTimeout);
+    return nowTime - m_lastElectTime >= std::chrono::milliseconds(m_electTimeout + 5000); // zd: +5s
 }
 
 bool RaftEngine::handleHeartbeat(u256 const& _from, h512 const& _node, RaftHeartBeat const& _hb)
@@ -1210,6 +1217,7 @@ void RaftEngine::switchToLeader()
 
     recoverElectTime();
     RAFTENGINE_LOG(DEBUG) << LOG_DESC("[#switchToLeader]") << LOG_KV("currentTerm", m_term);
+    RAFTENGINE_LOG(INFO) << LOG_DESC("[#switchToLeader]") << LOG_KV("currentTerm", m_term);
 }
 
 void RaftEngine::switchToFollower(raft::NodeIndex const& _leader)
@@ -1474,7 +1482,8 @@ bool RaftEngine::commit(Block const& _block)
     }
 
     RAFTENGINE_LOG(DEBUG) << LOG_DESC("[#commit]Start to commit block");
-    return checkAndExecute(_block);
+    return true; // zd 直接返回
+    // return checkAndExecute(_block); // zd 注释
 }
 
 bool RaftEngine::checkAndExecute(Block const& _block)

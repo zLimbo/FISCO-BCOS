@@ -54,6 +54,10 @@ public:
     void start() override;
     void stop() override;
 
+    std::shared_ptr<RaftEngine> getEngine() {
+        return m_raftEngine;
+    }
+
 protected:
     void handleBlock() override;
     bool shouldSeal() override;

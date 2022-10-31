@@ -93,6 +93,12 @@ public:
         return m_highestBlock;
     }
 
+    size_t getLeader() const
+    {
+        Guard Guard(m_mutex);
+        return m_leader;
+    }
+
     size_t getLastLeaderTerm() const
     {
         Guard Guard(m_mutex);

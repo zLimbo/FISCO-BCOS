@@ -68,7 +68,54 @@ void RaftSealer::handleBlock()
         return;
     }
 
+    using namespace std::chrono;
+    using Seconds = duration<double>;
+
+    auto block = m_sealing.block;
+    auto before = steady_clock::now();
+    auto txNum = block->transactions()->size();
+
     bool succ = m_raftEngine->commit(*(m_sealing.block));
+
+    double consensusTake = duration_cast<Seconds>(steady_clock::now() - before).count();
+
+
+    static bool isFirst = false;
+    static steady_clock::time_point last;
+    static double totalTxNum = 0.0;
+    if (!isFirst)
+    {
+        isFirst = true;
+        last = steady_clock::now();
+    }
+    else
+    {
+        static steady_clock::time_point start = steady_clock::now();
+        auto cur = steady_clock::now();
+        double take = duration_cast<Seconds>(cur - last).count();
+        double tps = static_cast<double>(txNum) / take;
+        last = cur;
+        totalTxNum += static_cast<double>(txNum);
+        double totalTake = duration_cast<Seconds>(cur - start).count();
+        double totalTps = totalTxNum / totalTake;
+        auto rfEng = m_raftEngine;
+
+        auto dtos = [](double d) {
+                    char buf[64];
+                    sprintf(buf, "%.2f", d);
+                    return std::string(buf);
+                };
+        LOG(INFO) << LOG_DESC("zd stat")
+                    << LOG_KV("| term", rfEng->getTerm())
+                      << LOG_KV("| me", rfEng->getNodeIdx())
+                      << LOG_KV("| leader", rfEng->getLeader())
+                  << LOG_KV("| height", block->blockHeader().number()) 
+                  << LOG_KV("| txNum", txNum)
+                  << LOG_KV("take(s)", dtos(take))
+                  << LOG_KV("| tps", dtos(tps)) << LOG_KV("totalTps", dtos(totalTps))
+                  << LOG_KV("| consensus take(s)", dtos(consensusTake));
+    }
+    
     if (!succ)
     {
         reset();
