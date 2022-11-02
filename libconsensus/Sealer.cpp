@@ -107,6 +107,8 @@ struct ZFakeTxs
         }
     }
 
+    
+
     /// fake single transaction
     Transaction::Ptr fakeTransaction()
     {
@@ -115,7 +117,8 @@ struct ZFakeTxs
         u256 gas = u256(100000000);
         u256 gasPrice = u256(0);
         Address dst;
-        std::string str = string(512, 'x') + std::to_string(utcTime());
+        std::string utcStr = std::to_string(utcTime());
+        std::string str = string(500 - utcStr.size(), 'x') + utcStr;
         bytes data(str.begin(), str.end());
         u256 const& nonce = u256(aTxCnt_++);
         Transaction::Ptr fakeTx =
@@ -161,13 +164,14 @@ struct ZFakeTxs
         }
     }
 
+
     int txsQueueSize()
     {
         std::unique_lock<std::mutex> lock{mu_};
         return txsQueue_.size();
     }
 
-    const int kMaxSealNum = 5000;
+    const int kMaxSealNum = 1000;
     std::mutex mu_;
     std::condition_variable cond_;
     std::queue<std::shared_ptr<Transactions>> txsQueue_;
@@ -216,7 +220,7 @@ void Sealer::doWork(bool wait)
 
             /////////////////////////////////////////////////
             //
-            static ZFakeTxs zFakeTxs{2};  // 线程池生产交易队列
+            static ZFakeTxs zFakeTxs{1};  // 线程池生产交易队列
 
             using namespace std::chrono;
             using Seconds = duration<double>;
